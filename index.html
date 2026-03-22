@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pourover Journal Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <p class="eyebrow">Pourover Journal</p>
+          <h1>把每一杯手冲，记成一本安静的冲煮册。</h1>
+          <p class="lede">
+            先记录今日这杯，再把豆子、器具和建议配方慢慢积成你自己的手冲档案。
+          </p>
+        </div>
+
+        <nav class="nav-pills" aria-label="Primary">
+          <button class="nav-pill is-active" data-view-target="home">首页</button>
+          <button class="nav-pill" data-view-target="brew">记录一杯</button>
+          <button class="nav-pill" data-view-target="equipment">设备档案</button>
+        </nav>
+
+      </aside>
+
+      <main class="main-stage">
+        <section class="view is-visible" data-view="home">
+          <section class="panel masthead">
+            <div class="masthead-grid">
+              <div class="masthead-copy-block">
+                <p class="card-kicker">Daily Brew Note</p>
+                <h2>今天这一杯，先记下器具、节奏，还是风味？</h2>
+                <p class="lede masthead-copy">
+                  这是一本给日常手冲留白的记录器。你可以从一条简单的冲煮笔记开始，也可以先拍豆袋，让系统按你的设备档案给出更像你的起始方案。
+                </p>
+                <div class="hero-actions">
+                  <button class="primary-button inline-button" data-view-target="brew">
+                    记录一杯
+                  </button>
+                  <button class="text-button" data-view-target="equipment">
+                    查看设备档案
+                  </button>
+                </div>
+              </div>
+
+              <div class="masthead-aside">
+                <div class="masthead-stat">
+                  <span class="stat-label">Today</span>
+                  <strong>03.22</strong>
+                </div>
+                <div class="masthead-stat">
+                  <span class="stat-label">Default Dripper</span>
+                  <strong id="hero-dripper"></strong>
+                </div>
+                <div class="masthead-stat">
+                  <span class="stat-label">Brew Mood</span>
+                  <strong>Quiet, precise, repeatable</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="home-grid">
+            <section class="panel journal-panel">
+              <div class="section-heading">
+                <p class="card-kicker">Recent Brews</p>
+                <h3>最近冲煮札记</h3>
+              </div>
+              <div class="filter-bar">
+                <label class="field compact-field">
+                  <span class="field-label">豆子</span>
+                  <input id="filter-bean" type="text" placeholder="搜索豆子名" />
+                </label>
+                <label class="field compact-field">
+                  <span class="field-label">滤杯</span>
+                  <select id="filter-dripper">
+                    <option value="all">全部</option>
+                    <option>V60</option>
+                    <option>Kalita Wave</option>
+                    <option>Origami Air S</option>
+                  </select>
+                </label>
+                <label class="field compact-field">
+                  <span class="field-label">最低评分</span>
+                  <select id="filter-rating">
+                    <option value="0">不限</option>
+                    <option value="4">4.0+</option>
+                    <option value="4.5">4.5+</option>
+                  </select>
+                </label>
+              </div>
+              <div class="brews-shell">
+                <div id="recent-brews" class="brew-list"></div>
+                <aside id="brew-detail" class="brew-detail panel-subtle"></aside>
+              </div>
+            </section>
+
+            <section class="profile-card">
+              <p class="card-kicker">Equipment Profile</p>
+              <h2>Equipment Profile</h2>
+              <p class="profile-caption">当前默认设备组合会被记录页和拍照建议作为默认上下文使用。</p>
+              <p id="equipment-profile-name" class="summary-title"></p>
+              <ul class="detail-list">
+                <li><span>滤杯</span><strong id="equipment-summary-dripper"></strong></li>
+                <li><span>研磨器</span><strong id="equipment-summary-grinder"></strong></li>
+                <li><span>滤纸</span><strong id="equipment-summary-filters"></strong></li>
+              </ul>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view="brew">
+          <div class="panel form-panel">
+            <div class="section-heading">
+              <p class="card-kicker">Brew Composer</p>
+              <h2>记录一杯手冲</h2>
+              <p class="supporting">
+                像在记录页上写下一次冲煮，而不是填写后台表单。
+              </p>
+            </div>
+
+            <section class="brew-assist panel-lite">
+              <button id="toggle-photo-assist" class="assist-toggle" type="button">
+                <span>拍照辅助导入</span>
+                <strong>上传豆袋照片，快速带入豆子信息和起始参数</strong>
+              </button>
+
+              <div id="photo-assist-panel" class="photo-assist-panel">
+                <div class="assist-compact">
+                  <div class="assist-upload-row">
+                    <label class="upload-field compact-upload">
+                      <span class="field-label">上传豆袋照片</span>
+                      <input id="photo-upload" type="file" accept="image/*" />
+                    </label>
+                    <button id="apply-suggestion" class="profile-save" type="button">
+                      填入当前记录
+                    </button>
+                  </div>
+
+                  <div class="assist-summary">
+                    <div class="assist-preview">
+                      <div class="photo-placeholder compact-photo">
+                        <img id="photo-preview" class="photo-preview" alt="Uploaded coffee preview" />
+                        <div class="photo-caption">
+                          <span class="photo-tag">sample photo</span>
+                          <strong id="photo-label">Mock Coffee Bag Photo</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="assist-copy">
+                      <p class="card-kicker">识别摘要</p>
+                      <h3 id="suggestion-bean-name"></h3>
+                      <p id="suggestion-meta" class="supporting"></p>
+                      <p id="photo-notes-copy" class="supporting">产区、处理法、烘焙日期与风味方向已被提取为起始信息。</p>
+                      <p id="ocr-status" class="supporting ocr-status"></p>
+                      <div class="assist-edit-grid">
+                        <label class="field compact-field">
+                          <span class="field-label">豆子名称</span>
+                          <input id="assist-bean-name" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">烘焙商</span>
+                          <input id="assist-roaster" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">庄园 / 处理站</span>
+                          <input id="assist-farm" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">产区 / 国家</span>
+                          <input id="assist-origin" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">品种</span>
+                          <input id="assist-variety" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">处理方式</span>
+                          <input id="assist-process" type="text" />
+                        </label>
+                        <label class="field compact-field">
+                          <span class="field-label">烘焙日期</span>
+                          <input id="assist-roast-date" type="text" />
+                        </label>
+                        <label class="field compact-field full-span">
+                          <span class="field-label">风味识别</span>
+                          <input id="assist-flavor-focus" type="text" />
+                        </label>
+                      </div>
+                      <div class="compact-metrics">
+                        <div><span>处理</span><strong id="suggestion-process"></strong></div>
+                        <div><span>粉水比</span><strong id="suggestion-ratio"></strong></div>
+                        <div><span>水温</span><strong id="suggestion-temp"></strong></div>
+                        <div><span>研磨</span><strong id="suggestion-grind"></strong></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div class="brew-layout">
+              <form id="brew-form" class="brew-form">
+                <section class="section-banner">
+                  <p class="card-kicker">Bean Archive</p>
+                  <h3>豆子档案</h3>
+                  <p class="supporting">记录这支豆子本身的信息，方便后续不同冲煮之间横向比较。</p>
+                </section>
+
+                <section class="sheet-block">
+                  <div class="sheet-heading">
+                    <p class="card-kicker">Bean</p>
+                    <h3>豆子信息</h3>
+                  </div>
+                  <div class="sheet-grid">
+                    <label class="field">
+                      <span class="field-label">豆子名称</span>
+                      <input id="brew-bean" name="bean" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">烘焙商</span>
+                      <input id="brew-roaster" name="roaster" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">庄园 / 处理站</span>
+                      <input id="brew-farm" name="farm" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">产区 / 国家</span>
+                      <input id="brew-origin" name="origin" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">品种</span>
+                      <input id="brew-variety" name="variety" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">处理方式</span>
+                      <input id="brew-process" name="process" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">烘焙度</span>
+                      <input id="brew-roast-level" name="roastLevel" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">烘焙日期</span>
+                      <input id="brew-roast-date" name="roastDate" type="text" placeholder="YYYY-MM-DD" />
+                    </label>
+                  </div>
+                </section>
+
+                <section class="section-banner">
+                  <p class="card-kicker">Brew Session</p>
+                  <h3>本次冲煮</h3>
+                  <p class="supporting">只记录这一杯发生了什么，包括器具、参数、注水节奏和主观感受。</p>
+                </section>
+
+                <section class="sheet-block">
+                  <div class="sheet-heading">
+                    <p class="card-kicker">Equipment</p>
+                    <h3>器具与研磨</h3>
+                  </div>
+                  <div class="sheet-grid">
+                    <label class="field">
+                      <span class="field-label">滤杯</span>
+                      <select id="brew-dripper" name="dripper">
+                        <option>V60</option>
+                        <option>Kalita Wave</option>
+                        <option>Origami Air S</option>
+                      </select>
+                    </label>
+                    <label class="field full-span">
+                      <span class="field-label">研磨建议</span>
+                      <input id="brew-grind" name="grind" type="text" />
+                    </label>
+                  </div>
+                </section>
+
+                <section class="sheet-block">
+                  <div class="sheet-heading">
+                    <p class="card-kicker">Recipe</p>
+                    <h3>冲煮参数</h3>
+                  </div>
+                  <div class="sheet-grid">
+                    <label class="field">
+                      <span class="field-label">粉水比</span>
+                      <input id="brew-ratio" name="ratio" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">水温</span>
+                      <input id="brew-temp" name="temp" type="text" />
+                    </label>
+                    <label class="field full-span">
+                      <span class="field-label">分段注水</span>
+                      <textarea id="brew-pours" name="pours" rows="4"></textarea>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="sheet-block">
+                  <div class="sheet-heading">
+                    <p class="card-kicker">Taste</p>
+                    <h3>风味与评分</h3>
+                  </div>
+                  <div class="sheet-grid">
+                    <label class="field full-span">
+                      <span class="field-label">风味印象</span>
+                      <textarea
+                        id="brew-notes"
+                        name="notes"
+                        rows="4"
+                        placeholder="例如：茉莉、柑橘、蜂蜜，尾段干净"
+                      ></textarea>
+                    </label>
+                    <label class="field full-span range-label">
+                      <span class="range-row">
+                        <span class="field-label">评分</span>
+                        <output id="brew-rating-output" for="brew-rating">4.5</output>
+                      </span>
+                      <input id="brew-rating" name="rating" type="range" min="1" max="5" step="0.1" value="4.5" />
+                    </label>
+                  </div>
+                </section>
+              </form>
+
+              <aside class="brew-summary">
+                <section class="summary-card">
+                  <p class="card-kicker">Session Card</p>
+                  <h3>这一页记录的重点</h3>
+                  <ul class="summary-list">
+                    <li>把豆子、滤杯和研磨刻度先钉住</li>
+                    <li>让注水节奏像一条可复刻的手法笔记</li>
+                    <li>把风味感受写得比参数更像你自己</li>
+                  </ul>
+                </section>
+
+                <section class="summary-card accent-card">
+                  <p class="card-kicker">Current Cue</p>
+                  <p id="brew-summary-headline" class="summary-headline"></p>
+                  <p id="brew-summary-meta" class="supporting"></p>
+                </section>
+              </aside>
+            </div>
+            <div class="form-actions">
+              <button id="save-brew" class="primary-button" type="submit" form="brew-form">
+                保存这杯记录
+              </button>
+              <p id="save-feedback" class="supporting save-feedback" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="equipment">
+          <div class="panel equipment-page">
+            <div class="section-heading">
+              <p class="card-kicker">Equipment Profiles</p>
+              <h2>设备档案</h2>
+              <p class="supporting">保存多套常用组合，并指定当前默认组合。</p>
+            </div>
+
+            <div class="equipment-layout">
+              <section class="equipment-profiles-sheet">
+                <div class="sheet-heading">
+                  <p class="card-kicker">Saved Profiles</p>
+                  <h3>已保存组合</h3>
+                </div>
+                <div id="equipment-profile-list" class="equipment-profile-list"></div>
+              </section>
+
+              <section class="equipment-editor-sheet">
+                <form id="equipment-form" class="equipment-form">
+                  <label class="field compact-field">
+                    <span class="field-label">组合名称</span>
+                    <input id="equipment-name" name="name" type="text" placeholder="例如：日常 V60" />
+                  </label>
+                  <label class="field compact-field">
+                    <span class="field-label">滤杯</span>
+                    <select id="equipment-dripper" name="dripper"></select>
+                    <input id="equipment-dripper-custom" class="custom-input is-hidden" type="text" placeholder="自定义滤杯" />
+                  </label>
+                  <label class="field compact-field">
+                    <span class="field-label">研磨器</span>
+                    <select id="equipment-grinder" name="grinder"></select>
+                    <input id="equipment-grinder-custom" class="custom-input is-hidden" type="text" placeholder="自定义研磨器" />
+                  </label>
+                  <label class="field compact-field">
+                    <span class="field-label">滤纸</span>
+                    <select id="equipment-filters" name="filters"></select>
+                    <input id="equipment-filters-custom" class="custom-input is-hidden" type="text" placeholder="自定义滤纸" />
+                  </label>
+                  <div class="profile-actions">
+                    <button class="profile-save" type="submit">保存当前组合</button>
+                    <button id="set-default-profile" class="secondary-button" type="button">设为默认</button>
+                    <button id="new-profile" class="secondary-button" type="button">新建设备组合</button>
+                    <button id="delete-profile" class="secondary-button danger-button" type="button">删除当前组合</button>
+                    <p id="equipment-feedback" class="supporting profile-feedback" aria-live="polite"></p>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

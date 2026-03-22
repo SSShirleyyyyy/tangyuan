@@ -1,0 +1,10 @@
+{
+  "name": "pourover-coffee-journal-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "build:pages": "rm -rf dist && mkdir -p dist && cp index.html app.js styles.css dist/ && cp -R src assets dist/ && touch dist/.nojekyll"
+  }
+}

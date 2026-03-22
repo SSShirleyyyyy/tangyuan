@@ -1,0 +1,1043 @@
+:root {
+  --paper: #f4efe6;
+  --paper-strong: #fbf7ef;
+  --linen: #ebe2d3;
+  --ink: #1f1a17;
+  --muted: #6c6257;
+  --line: rgba(51, 38, 28, 0.14);
+  --accent: #7b4b2a;
+  --accent-soft: #b98359;
+  --shadow: 0 18px 40px rgba(50, 36, 23, 0.08);
+  --radius-xl: 28px;
+  --radius-lg: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  position: relative;
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: "Noto Sans JP", "PingFang SC", sans-serif;
+  background:
+    linear-gradient(180deg, rgba(248, 244, 238, 0.92), rgba(239, 232, 221, 0.96)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(130, 103, 77, 0.018),
+      rgba(130, 103, 77, 0.018) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(244, 239, 230, 0.22), rgba(244, 239, 230, 0.48)),
+    url("./assets/pourover-gear-watermark.svg");
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, 78% 42%;
+  background-size: cover, min(1320px, 96vw);
+  opacity: 0.38;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.page-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 0;
+  min-height: 100vh;
+}
+
+.sidebar {
+  padding: 34px 28px;
+  border-right: 1px solid var(--line);
+  background: rgba(246, 241, 233, 0.85);
+}
+
+.main-stage {
+  padding: 36px;
+}
+
+.brand-block {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-block h1,
+.section-heading h2,
+.section-heading h3,
+.sheet-heading h3,
+.suggestion-card h3,
+.profile-card h2,
+.masthead h2 {
+  margin: 0;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-weight: 600;
+  line-height: 1.14;
+}
+
+.brand-block h1 {
+  font-size: clamp(2.5rem, 4vw, 4.8rem);
+  letter-spacing: -0.04em;
+  max-width: 7ch;
+}
+
+.eyebrow,
+.card-kicker {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.lede,
+.supporting,
+.profile-caption {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.nav-pills {
+  display: grid;
+  gap: 6px;
+  margin: 28px 0;
+}
+
+.nav-pill {
+  padding: 11px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  text-align: left;
+  color: var(--muted);
+  background: transparent;
+  transition: color 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.nav-pill:hover,
+.nav-pill.is-active {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.profile-card,
+.panel,
+.sheet-block,
+.photo-card,
+.suggestion-card {
+  background: var(--paper-strong);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.profile-card {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+}
+
+.summary-title {
+  margin: 8px 0 16px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.custom-input.is-hidden {
+  display: none;
+}
+
+.detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.detail-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-list span {
+  color: var(--muted);
+}
+
+.view {
+  display: none;
+}
+
+.view.is-visible {
+  display: grid;
+  gap: 24px;
+}
+
+.panel {
+  border-radius: var(--radius-xl);
+  padding: 28px;
+}
+
+.masthead {
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+  display: grid;
+  background:
+    linear-gradient(180deg, rgba(251, 247, 239, 0.74), rgba(244, 236, 223, 0.94)),
+    radial-gradient(circle at top right, rgba(176, 134, 92, 0.08), transparent 30%);
+}
+
+.masthead::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("./assets/pourover-gear-watermark.svg") no-repeat 108% 50% / 760px;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+}
+
+.masthead-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 240px;
+  gap: 28px;
+  align-items: end;
+}
+
+.masthead h2 {
+  font-size: clamp(2.2rem, 5vw, 5rem);
+  max-width: 10ch;
+  letter-spacing: -0.05em;
+}
+
+.masthead-copy {
+  max-width: 55ch;
+  margin: 14px 0 0;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 28px;
+  align-items: center;
+}
+
+.masthead-aside {
+  display: grid;
+  gap: 16px;
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+
+.masthead-stat {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.masthead-stat strong,
+.dossier-strip strong {
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.primary-button,
+.inline-button {
+  border: 0;
+  padding: 16px 28px;
+  border-radius: 999px;
+  color: #f8f3ec;
+  background: var(--accent);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.primary-button:hover,
+.inline-button:hover {
+  transform: translateY(-1px);
+  background: #6c3f21;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 0;
+}
+
+.profile-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.profile-save {
+  justify-self: start;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(72, 52, 37, 0.28);
+  border-radius: 999px;
+  background: rgba(251, 247, 239, 0.72);
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.profile-save:hover {
+  transform: translateY(-1px);
+  border-color: rgba(72, 52, 37, 0.46);
+  background: rgba(246, 239, 228, 0.96);
+  box-shadow: 0 10px 20px rgba(44, 31, 21, 0.08);
+}
+
+.profile-save:focus {
+  outline: 2px solid rgba(123, 75, 42, 0.22);
+  outline-offset: 2px;
+}
+
+.profile-feedback {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: 0.86rem;
+}
+
+.secondary-button {
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(72, 52, 37, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--ink);
+}
+
+.danger-button {
+  color: #7d2e2e;
+  border-color: rgba(125, 46, 46, 0.22);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 340px;
+  gap: 24px;
+}
+
+.home-side-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.journal-panel {
+  background:
+    linear-gradient(180deg, rgba(251, 247, 239, 0.96), rgba(248, 242, 233, 0.98));
+}
+
+.brews-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.brew-list {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0 10px;
+}
+
+.brew-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+
+.brew-card:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.brew-date {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.brew-main strong {
+  display: block;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.brew-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.brew-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.brew-main {
+  min-width: 0;
+}
+
+.icon-button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  line-height: 1;
+}
+
+.icon-button:hover {
+  color: var(--ink);
+}
+
+.brew-detail {
+  padding: 18px;
+  border-radius: 20px;
+  min-width: 0;
+  overflow: hidden;
+  align-self: start;
+}
+
+.panel-subtle {
+  background: rgba(250, 245, 237, 0.92);
+  border: 1px solid var(--line);
+}
+
+.detail-title {
+  margin: 0 0 10px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.detail-block {
+  margin-top: 14px;
+}
+
+.detail-block p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.meta-line {
+  color: var(--muted);
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.supporting {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.specimen-panel,
+.quiet-note {
+  background: rgba(251, 247, 239, 0.98);
+}
+
+.specimen-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bean-spotlight {
+  padding-top: 8px;
+}
+
+.bean-name {
+  margin: 0;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.bean-origin,
+.bean-flavor {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.quiet-note p:last-child {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.form-panel {
+  background:
+    linear-gradient(180deg, rgba(251, 247, 239, 0.97), rgba(245, 239, 230, 0.98));
+}
+
+.panel-lite {
+  margin-top: 26px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: rgba(251, 247, 239, 0.92);
+  border: 1px solid var(--line);
+}
+
+.assist-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.assist-toggle span,
+.assist-toggle strong {
+  display: block;
+}
+
+.assist-toggle strong {
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-weight: 600;
+}
+
+.photo-assist-panel {
+  display: none;
+  margin-top: 14px;
+}
+
+.photo-assist-panel.is-open {
+  display: block;
+}
+
+.assist-compact {
+  display: grid;
+  gap: 14px;
+}
+
+.assist-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+
+.compact-upload {
+  flex: 1;
+  min-width: 220px;
+}
+
+.assist-summary {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.compact-photo {
+  min-height: 160px;
+}
+
+.assist-copy h3 {
+  margin: 0 0 8px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.2rem;
+}
+
+.compact-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+.ocr-status {
+  min-height: 1.5em;
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+}
+
+.assist-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+.assist-edit-grid .field input {
+  padding: 8px 0;
+}
+
+.compact-metrics div {
+  display: grid;
+  gap: 4px;
+}
+
+.compact-metrics span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.compact-metrics strong {
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1rem;
+}
+
+.equipment-page {
+  background:
+    linear-gradient(180deg, rgba(251, 247, 239, 0.97), rgba(243, 236, 226, 0.98));
+}
+
+.equipment-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.equipment-profiles-sheet,
+.equipment-editor-sheet {
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(251, 247, 239, 0.98);
+  border: 1px solid var(--line);
+}
+
+.equipment-profile-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.equipment-profile-item {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(72, 52, 37, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.38);
+  text-align: left;
+}
+
+.equipment-profile-item.is-selected {
+  border-color: rgba(72, 52, 37, 0.36);
+  background: rgba(244, 236, 224, 0.82);
+}
+
+.equipment-profile-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-family: "Noto Serif JP", Georgia, serif;
+}
+
+.equipment-form {
+  display: grid;
+  gap: 12px;
+}
+
+.brew-form {
+  display: grid;
+  gap: 18px;
+}
+
+.section-banner {
+  padding: 4px 0 2px;
+}
+
+.section-banner h3 {
+  margin: 0 0 8px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.section-banner p:last-child {
+  margin: 0;
+}
+
+.brew-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) 300px;
+  gap: 24px;
+  margin-top: 26px;
+}
+
+.sheet-block {
+  padding: 22px;
+  border-radius: 22px;
+}
+
+.sheet-heading {
+  margin-bottom: 18px;
+}
+
+.sheet-heading h3 {
+  font-size: 1.15rem;
+}
+
+.sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.compact-field {
+  gap: 4px;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(57, 43, 32, 0.2);
+  border-radius: 0;
+  padding: 12px 0;
+  color: var(--ink);
+  background: transparent;
+}
+
+.compact-field input,
+.compact-field select {
+  padding: 8px 0;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.nav-pill:focus,
+.primary-button:focus,
+.text-button:focus {
+  outline: 2px solid rgba(123, 75, 42, 0.28);
+  outline-offset: 2px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.range-label input {
+  accent-color: var(--accent);
+}
+
+.range-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+#brew-rating-output {
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.2rem;
+}
+
+.brew-summary {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.form-actions {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.save-feedback {
+  margin: 0;
+}
+
+.summary-card {
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(251, 247, 239, 0.98);
+  border: 1px solid var(--line);
+}
+
+.summary-card h3 {
+  margin: 0 0 14px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.3rem;
+}
+
+.summary-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.accent-card {
+  background:
+    linear-gradient(180deg, rgba(245, 236, 224, 0.96), rgba(240, 228, 214, 0.98));
+}
+
+.summary-headline {
+  margin: 0 0 10px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.18rem;
+}
+
+.suggestion-shell {
+  background:
+    linear-gradient(180deg, rgba(251, 247, 239, 0.98), rgba(243, 235, 223, 0.98));
+}
+
+.suggestion-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.photo-card,
+.suggestion-card {
+  padding: 22px;
+  border-radius: 22px;
+}
+
+.upload-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.photo-placeholder {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  display: grid;
+  align-items: end;
+  padding: 18px;
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(41, 28, 20, 0.12), rgba(41, 28, 20, 0.12)),
+    linear-gradient(160deg, #a27550, #6a4933 65%, #4d3325);
+}
+
+.photo-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.photo-preview.has-image {
+  opacity: 0.68;
+}
+
+.photo-caption {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  color: #f8f3ec;
+}
+
+.photo-notes {
+  margin: 16px 0 18px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.photo-tag {
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.suggestion-headline {
+  margin: 18px 0 8px;
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1.45rem;
+}
+
+.dossier-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.inline-note {
+  margin-top: 14px;
+}
+
+.pour-plan {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.pour-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pour-step:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+  .page-shell,
+  .home-grid,
+  .brews-shell,
+  .suggestion-grid,
+  .brew-layout,
+  .masthead-grid,
+  .equipment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .masthead-aside {
+    padding-left: 0;
+    padding-top: 18px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 720px) {
+  .main-stage,
+  .sidebar {
+    padding: 20px;
+  }
+
+  .panel,
+  .profile-card,
+  .sheet-block,
+  .photo-card,
+  .suggestion-card {
+    padding: 20px;
+  }
+
+  .masthead h2,
+  .brand-block h1 {
+    max-width: none;
+  }
+
+  .sheet-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brew-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dossier-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
