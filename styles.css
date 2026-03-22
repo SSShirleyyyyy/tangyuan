@@ -596,6 +596,11 @@ button {
   gap: 14px;
 }
 
+.assist-hint {
+  margin: -2px 0 0;
+  font-size: 0.88rem;
+}
+
 .compact-upload {
   flex: 1;
   min-width: 220px;

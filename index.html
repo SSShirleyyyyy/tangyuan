@@ -132,20 +132,28 @@
             <section class="brew-assist panel-lite">
               <button id="toggle-photo-assist" class="assist-toggle" type="button">
                 <span>拍照辅助导入</span>
-                <strong>上传豆袋照片，快速带入豆子信息和起始参数</strong>
+                <strong>拍照或导入豆袋照片，快速带入豆子信息和起始参数</strong>
               </button>
 
               <div id="photo-assist-panel" class="photo-assist-panel">
                 <div class="assist-compact">
                   <div class="assist-upload-row">
                     <label class="upload-field compact-upload">
-                      <span class="field-label">上传豆袋照片</span>
-                      <input id="photo-upload" type="file" accept="image/*" />
+                      <span class="field-label">拍照或导入豆袋照片</span>
+                      <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                      />
                     </label>
                     <button id="apply-suggestion" class="profile-save" type="button">
                       填入当前记录
                     </button>
                   </div>
+                  <p class="supporting assist-hint">
+                    手机上会优先调用后置相机；桌面端则继续使用本地图片选择。
+                  </p>
 
                   <div class="assist-summary">
                     <div class="assist-preview">
