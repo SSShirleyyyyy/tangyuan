@@ -39,6 +39,8 @@ export function buildBrewEntry(formValues) {
     roastLevel: formValues.roastLevel?.trim() || "",
     roastDate: formValues.roastDate?.trim() || "",
     dripper: formValues.dripper,
+    grinder: formValues.grinder?.trim() || "",
+    filters: formValues.filters?.trim() || "",
     ratio: formValues.ratio.trim(),
     temp: formValues.temp?.trim() || "",
     grind: formValues.grind?.trim() || "",

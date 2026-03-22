@@ -27,6 +27,8 @@ test("buildBrewEntry shapes form values into a saved brew record", () => {
     roastLevel: "Light",
     roastDate: "2026-03-18",
     dripper: "V60",
+    grinder: "Comandante C40",
+    filters: "CAFEC Abaca 02",
     ratio: "1:16",
     rating: "4.7",
     notes: "Jasmine and citrus",
@@ -41,6 +43,8 @@ test("buildBrewEntry shapes form values into a saved brew record", () => {
   assert.equal(brew.roastLevel, "Light");
   assert.equal(brew.roastDate, "2026-03-18");
   assert.equal(brew.dripper, "V60");
+  assert.equal(brew.grinder, "Comandante C40");
+  assert.equal(brew.filters, "CAFEC Abaca 02");
   assert.equal(brew.rating, 4.7);
   assert.match(brew.date, /^[A-Z][a-z]{2} \d{2}$/);
 });

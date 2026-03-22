@@ -6,7 +6,6 @@ import {
 import {
   describePreference,
   formatPourPlan,
-  summarizeBean,
 } from "./src/presentation.js";
 import {
   BREW_STORAGE_KEY,
@@ -63,6 +62,7 @@ const equipmentFields = [
   "grinder",
   "filters",
 ];
+const legacyDripperOptions = ["V60", "Kalita Wave", "Origami Air S"];
 
 const url = new URL(window.location.href);
 if (url.searchParams.get("reset-brews") === "1") {
@@ -292,7 +292,7 @@ function renderRecentBrews() {
 
     <div class="detail-block">
       <p><strong>本次冲煮</strong></p>
-      <p class="supporting">${escapeHtml(displayText(hoveredBrew.dripper))} · ${escapeHtml(displayText(hoveredBrew.ratio))} · ${escapeHtml(displayText(hoveredBrew.temp))}</p>
+      <p class="supporting">${escapeHtml(displayText(hoveredBrew.dripper))} · ${escapeHtml(displayText(hoveredBrew.grinder))} · ${escapeHtml(displayText(hoveredBrew.filters))} · ${escapeHtml(displayText(hoveredBrew.ratio))} · ${escapeHtml(displayText(hoveredBrew.temp))}</p>
     </div>
 
     <div class="detail-block">
@@ -300,13 +300,6 @@ function renderRecentBrews() {
       <p class="supporting">${escapeHtml(displayText(hoveredBrew.note, "暂无风味记录"))} · ${Number(hoveredBrew.rating).toFixed(1)} / 5</p>
     </div>
   `;
-}
-
-function renderBeanSpotlight() {
-  document.querySelector("#bean-name").textContent = state.activeBean.name;
-  document.querySelector("#bean-origin").textContent = summarizeBean(state.activeBean);
-  document.querySelector("#bean-flavor").textContent = state.activeBean.flavorFocus;
-  document.querySelector("#bean-roast-date").textContent = state.activeBean.roastDate;
 }
 
 function renderSuggestion() {
@@ -341,6 +334,8 @@ function prefillBrewForm() {
   document.querySelector("#brew-roast-level").value = state.activeBean.roastLevel || "";
   document.querySelector("#brew-roast-date").value = state.activeBean.roastDate || "";
   document.querySelector("#brew-dripper").value = getActiveEquipmentProfile().dripper;
+  document.querySelector("#brew-grinder").value = getActiveEquipmentProfile().grinder;
+  document.querySelector("#brew-filters").value = getActiveEquipmentProfile().filters;
   document.querySelector("#brew-grind").value = state.activeSuggestion.grindGuidance;
   document.querySelector("#brew-ratio").value = state.activeSuggestion.ratio;
   document.querySelector("#brew-temp").value = state.activeSuggestion.waterTemp;
@@ -360,6 +355,8 @@ function loadBrewIntoForm(brew) {
   document.querySelector("#brew-roast-level").value = brew.roastLevel || "";
   document.querySelector("#brew-roast-date").value = brew.roastDate || "";
   document.querySelector("#brew-dripper").value = brew.dripper || "";
+  document.querySelector("#brew-grinder").value = brew.grinder || "";
+  document.querySelector("#brew-filters").value = brew.filters || "";
   document.querySelector("#brew-grind").value = brew.grind || "";
   document.querySelector("#brew-ratio").value = brew.ratio || "";
   document.querySelector("#brew-temp").value = brew.temp || "";
@@ -402,6 +399,29 @@ function populateEquipmentSelects() {
   });
 }
 
+function populateBrewDripperOptions() {
+  const brewDripperSelect = document.querySelector("#brew-dripper");
+  const filterDripperSelect = document.querySelector("#filter-dripper");
+  const optionSet = new Set([
+    ...equipmentCatalog.dripper,
+    ...legacyDripperOptions,
+    ...state.equipmentState.profiles.map((profile) => profile.dripper),
+    ...state.brews.map((brew) => brew.dripper).filter(Boolean),
+  ]);
+  const dripperOptions = [...optionSet];
+
+  brewDripperSelect.innerHTML = dripperOptions
+    .map((option) => `<option value="${option}">${option}</option>`)
+    .join("");
+
+  filterDripperSelect.innerHTML = [
+    '<option value="all">全部</option>',
+    ...dripperOptions.map((option) => `<option value="${option}">${option}</option>`),
+  ].join("");
+
+  filterDripperSelect.value = state.filters.dripper;
+}
+
 function readEquipmentField(field) {
   const select = document.querySelector(`#equipment-${field}`);
   const customInput = document.querySelector(`#equipment-${field}-custom`);
@@ -416,10 +436,10 @@ function refreshSuggestionForCurrentContext() {
 }
 
 function renderAll() {
+  populateBrewDripperOptions();
   renderEquipment();
   renderEquipmentProfiles();
   renderRecentBrews();
-  renderBeanSpotlight();
   renderSuggestion();
   renderBrewSummary();
 }
@@ -516,6 +536,8 @@ brewForm.addEventListener("submit", (event) => {
     roastLevel: formData.get("roastLevel"),
     roastDate: formData.get("roastDate"),
     dripper: formData.get("dripper"),
+    grinder: formData.get("grinder"),
+    filters: formData.get("filters"),
     grind: formData.get("grind"),
     ratio: formData.get("ratio"),
     temp: formData.get("temp"),
