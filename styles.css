@@ -399,11 +399,17 @@ button {
   padding: 18px 0;
   border-bottom: 1px solid var(--line);
   align-items: start;
+  transition: background 180ms ease, transform 180ms ease;
+  border-radius: 16px;
 }
 
 .brew-card:last-child {
   border-bottom: 0;
   padding-bottom: 0;
+}
+
+.brew-card.is-active {
+  background: rgba(244, 236, 224, 0.48);
 }
 
 .brew-date {
@@ -1010,6 +1016,19 @@ textarea {
     padding: 20px;
   }
 
+  .nav-pills {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    gap: 18px;
+    padding-bottom: 2px;
+  }
+
+  .nav-pill {
+    white-space: nowrap;
+    padding: 10px 0;
+  }
+
   .panel,
   .profile-card,
   .sheet-block,
@@ -1030,6 +1049,25 @@ textarea {
   .brew-card {
     grid-template-columns: 1fr;
     gap: 8px;
+    padding: 14px 0;
+  }
+
+  .brew-title-row {
+    gap: 10px;
+  }
+
+  .brew-actions {
+    gap: 10px;
+  }
+
+  .brew-detail {
+    padding: 16px;
+  }
+
+  .assist-summary,
+  .assist-edit-grid,
+  .compact-metrics {
+    grid-template-columns: 1fr;
   }
 
   .dossier-strip {

@@ -92,6 +92,7 @@ const state = {
     ).profiles[0],
   }),
   hoveredBrewId: null,
+  selectedBrewId: null,
   editingBrewId: null,
   previewUrl: "",
 };
@@ -242,9 +243,11 @@ function renderRecentBrews() {
         const meta = `${displayText(brew.dripper)} · ${displayText(brew.ratio)} · ${Number(
           brew.rating
         ).toFixed(1)} / 5`;
+        const isActive =
+          brew.id === state.hoveredBrewId || brew.id === state.selectedBrewId;
 
         return `
-        <article class="brew-card" data-brew-id="${brew.id}">
+        <article class="brew-card ${isActive ? "is-active" : ""}" data-brew-id="${brew.id}">
           <div class="brew-date">${brew.date}</div>
           <div class="brew-main">
             <div class="brew-title-row">
@@ -263,11 +266,12 @@ function renderRecentBrews() {
     )
     .join("");
 
-  const hoveredBrew = filteredBrews.find((brew) => brew.id === state.hoveredBrewId);
+  const activeDetailId = state.hoveredBrewId || state.selectedBrewId;
+  const hoveredBrew = filteredBrews.find((brew) => brew.id === activeDetailId);
 
   if (!hoveredBrew) {
     brewDetail.innerHTML =
-      '<p class="supporting">把鼠标移到某条冲煮记录上，这里会显示它的完整信息。</p>';
+      '<p class="supporting">桌面端可悬停查看详情，手机端可点按某条记录查看详情。</p>';
     return;
   }
 
@@ -640,6 +644,10 @@ equipmentProfileList.addEventListener("click", (event) => {
 });
 
 document.querySelector("#recent-brews").addEventListener("pointermove", (event) => {
+  if (!window.matchMedia("(hover: hover)").matches) {
+    return;
+  }
+
   const card = event.target.closest("[data-brew-id]");
   const nextHoveredId = card?.dataset.brewId || null;
 
@@ -652,6 +660,10 @@ document.querySelector("#recent-brews").addEventListener("pointermove", (event) 
 });
 
 document.querySelector("#recent-brews").addEventListener("pointerleave", () => {
+  if (!window.matchMedia("(hover: hover)").matches) {
+    return;
+  }
+
   if (state.hoveredBrewId === null) {
     return;
   }
@@ -662,6 +674,15 @@ document.querySelector("#recent-brews").addEventListener("pointerleave", () => {
 
 document.querySelector("#recent-brews").addEventListener("click", (event) => {
   const actionButton = event.target.closest("[data-action]");
+  const brewCard = event.target.closest("[data-brew-id]");
+
+  if (!actionButton && brewCard) {
+    state.selectedBrewId =
+      state.selectedBrewId === brewCard.dataset.brewId ? null : brewCard.dataset.brewId;
+    renderRecentBrews();
+    return;
+  }
+
   if (!actionButton) {
     return;
   }
@@ -674,6 +695,7 @@ document.querySelector("#recent-brews").addEventListener("click", (event) => {
 
   if (actionButton.dataset.action === "edit") {
     loadBrewIntoForm(brew);
+    state.selectedBrewId = brewId;
     setView("brew");
     saveFeedback.textContent = "已将这条记录带入编辑表单。";
     return;
@@ -683,6 +705,7 @@ document.querySelector("#recent-brews").addEventListener("click", (event) => {
     state.brews = removeBrewEntry(state.brews, brewId);
     persistBrews();
     state.hoveredBrewId = null;
+    state.selectedBrewId = null;
     renderRecentBrews();
   }
 });
