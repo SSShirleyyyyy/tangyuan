@@ -190,6 +190,14 @@ button {
   color: var(--muted);
 }
 
+.compact-detail-list {
+  margin-top: 14px;
+}
+
+.compact-detail-list li {
+  padding-bottom: 8px;
+}
+
 .view {
   display: none;
 }
@@ -365,6 +373,33 @@ button {
 .home-side-stack {
   display: grid;
   gap: 24px;
+}
+
+.inventory-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.inventory-status-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(244, 236, 224, 0.54);
+}
+
+.inventory-status-grid span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inventory-status-grid strong {
+  font-family: "Noto Serif JP", Georgia, serif;
+  font-size: 1rem;
 }
 
 .journal-panel {
@@ -877,6 +912,10 @@ textarea {
   font-size: 1.18rem;
 }
 
+.inventory-note {
+  margin-top: 8px;
+}
+
 .suggestion-shell {
   background:
     linear-gradient(180deg, rgba(251, 247, 239, 0.98), rgba(243, 235, 223, 0.98));
@@ -1071,7 +1110,8 @@ textarea {
 
   .assist-summary,
   .assist-edit-grid,
-  .compact-metrics {
+  .compact-metrics,
+  .inventory-status-grid {
     grid-template-columns: 1fr;
   }
 

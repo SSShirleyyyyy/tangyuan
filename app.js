@@ -33,6 +33,16 @@ import {
   CUSTOM_OPTION,
   equipmentCatalog,
 } from "./src/equipment-catalog.js";
+import {
+  applyBrewInventoryChange,
+  BEAN_INVENTORY_STORAGE_KEY,
+  buildBeanProfile,
+  getBeanInventoryStatus,
+  initializeBeanInventoryState,
+  removeBeanProfile,
+  setActiveBeanProfile,
+  updateBeanProfile,
+} from "./src/bean-inventory.js";
 
 const views = [...document.querySelectorAll("[data-view]")];
 const navButtons = [...document.querySelectorAll("[data-view-target]")];
@@ -42,11 +52,15 @@ const saveFeedback = document.querySelector("#save-feedback");
 const equipmentForm = document.querySelector("#equipment-form");
 const equipmentFeedback = document.querySelector("#equipment-feedback");
 const equipmentNameInput = document.querySelector("#equipment-name");
+const beanInventoryForm = document.querySelector("#bean-inventory-form");
+const beanInventoryFeedback = document.querySelector("#bean-inventory-feedback");
+const beanInventoryList = document.querySelector("#bean-inventory-list");
 const photoUpload = document.querySelector("#photo-upload");
 const photoPreview = document.querySelector("#photo-preview");
 const photoAssistPanel = document.querySelector("#photo-assist-panel");
 const ocrStatus = document.querySelector("#ocr-status");
 const equipmentProfileList = document.querySelector("#equipment-profile-list");
+const brewBeanSelect = document.querySelector("#brew-bean-id");
 const assistFields = {
   name: document.querySelector("#assist-bean-name"),
   roaster: document.querySelector("#assist-roaster"),
@@ -77,7 +91,11 @@ const state = {
     localStorage.getItem(EQUIPMENT_STORAGE_KEY),
     defaultEquipmentProfile
   ),
+  beanInventoryState: initializeBeanInventoryState(
+    localStorage.getItem(BEAN_INVENTORY_STORAGE_KEY)
+  ),
   selectedEquipmentProfileId: "profile-1",
+  selectedInventoryBeanId: "",
   filters: {
     beanQuery: "",
     dripper: "all",
@@ -170,6 +188,48 @@ function getSelectedEquipmentProfile() {
   );
 }
 
+function getActiveInventoryBean() {
+  return (
+    state.beanInventoryState.beans.find(
+      (bean) => bean.id === state.beanInventoryState.activeBeanId
+    ) || state.beanInventoryState.beans[0] || null
+  );
+}
+
+function getSelectedInventoryBean() {
+  return (
+    state.beanInventoryState.beans.find(
+      (bean) => bean.id === state.selectedInventoryBeanId
+    ) || getActiveInventoryBean()
+  );
+}
+
+function getInventoryStatusCopy(readiness) {
+  if (readiness === "resting") {
+    return "再等等";
+  }
+
+  if (readiness === "ready") {
+    return "现在适合冲";
+  }
+
+  return "窗口后段";
+}
+
+function beanProfileToActiveBean(bean) {
+  return {
+    name: bean.name,
+    roaster: bean.roaster || "Unknown Roaster",
+    farm: bean.farm || "Unknown Farm",
+    origin: bean.origin || "Unknown Origin",
+    variety: bean.variety || "Unknown Variety",
+    process: bean.process || "Washed",
+    roastLevel: bean.roastLevel || "Light",
+    flavorFocus: "clean sweetness",
+    roastDate: bean.roastDate,
+  };
+}
+
 function setView(nextView) {
   views.forEach((view) => {
     view.classList.toggle("is-visible", view.dataset.view === nextView);
@@ -219,6 +279,115 @@ function renderEquipmentProfiles() {
       `;
     })
     .join("");
+}
+
+function renderInventorySummary() {
+  const summaryCopy = document.querySelector("#inventory-summary-copy");
+  const summaryStats = document.querySelector("#inventory-summary-stats");
+  const summaryList = document.querySelector("#inventory-summary-list");
+  const statuses = state.beanInventoryState.beans.map((bean) => ({
+    bean,
+    ...getBeanInventoryStatus(bean),
+  }));
+
+  if (statuses.length === 0) {
+    summaryCopy.textContent = "还没有录入库存豆子，先在豆子库存页建一支常喝的豆。";
+    summaryStats.innerHTML = "";
+    summaryList.innerHTML = "";
+    return;
+  }
+
+  const readyCount = statuses.filter((status) => status.readiness === "ready").length;
+  const restingCount = statuses.filter(
+    (status) => status.readiness === "resting"
+  ).length;
+  const lowStockCount = statuses.filter((status) => status.isLowStock).length;
+
+  summaryCopy.textContent =
+    "用养豆天数和剩余克数一起判断现在该冲哪支、哪支该补货。";
+  summaryStats.innerHTML = `
+    <div><span>适合冲</span><strong>${readyCount}</strong></div>
+    <div><span>养豆中</span><strong>${restingCount}</strong></div>
+    <div><span>低库存</span><strong>${lowStockCount}</strong></div>
+  `;
+
+  summaryList.innerHTML = statuses
+    .slice()
+    .sort((left, right) => {
+      if (left.isLowStock !== right.isLowStock) {
+        return left.isLowStock ? -1 : 1;
+      }
+
+      if (left.readiness !== right.readiness) {
+        return left.readiness === "ready" ? -1 : 1;
+      }
+
+      return left.bean.currentWeight - right.bean.currentWeight;
+    })
+    .slice(0, 3)
+    .map(
+      ({ bean, restDay, readiness, isLowStock }) => `
+        <li>
+          <span>${escapeHtml(bean.name)}</span>
+          <strong>${escapeHtml(getInventoryStatusCopy(readiness))} · 第 ${restDay} 天${
+            isLowStock ? " · 低库存" : ""
+          }</strong>
+        </li>
+      `
+    )
+    .join("");
+}
+
+function renderBeanInventoryProfiles() {
+  beanInventoryList.innerHTML = state.beanInventoryState.beans
+    .map((bean) => {
+      const status = getBeanInventoryStatus(bean);
+      const isSelected = bean.id === state.selectedInventoryBeanId;
+      const isDefault = bean.id === state.beanInventoryState.activeBeanId;
+
+      return `
+        <button class="equipment-profile-item ${isSelected ? "is-selected" : ""}" data-bean-id="${bean.id}" type="button">
+          <strong>${escapeHtml(bean.name)}</strong>
+          <p class="supporting">第 ${status.restDay} 天 · ${escapeHtml(getInventoryStatusCopy(status.readiness))}</p>
+          <p class="supporting">${bean.currentWeight}g 剩余${isDefault ? " · 默认豆子" : ""}</p>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderBeanInventoryEditor() {
+  const selectedBean = getSelectedInventoryBean();
+  const restCopy = document.querySelector("#inventory-rest-copy");
+  const stockCopy = document.querySelector("#inventory-stock-copy");
+
+  if (!selectedBean) {
+    beanInventoryForm.reset();
+    restCopy.textContent = "先新建一支豆子，才能开始追踪养豆与库存。";
+    stockCopy.textContent = "保存后，这支豆子就能在记录页里自动带入并扣减库存。";
+    return;
+  }
+
+  document.querySelector("#inventory-bean-name").value = selectedBean.name;
+  document.querySelector("#inventory-roaster").value = selectedBean.roaster || "";
+  document.querySelector("#inventory-farm").value = selectedBean.farm || "";
+  document.querySelector("#inventory-origin").value = selectedBean.origin || "";
+  document.querySelector("#inventory-variety").value = selectedBean.variety || "";
+  document.querySelector("#inventory-process").value = selectedBean.process || "";
+  document.querySelector("#inventory-roast-level").value = selectedBean.roastLevel || "";
+  document.querySelector("#inventory-roast-date").value = selectedBean.roastDate || "";
+  document.querySelector("#inventory-opened-date").value = selectedBean.openedDate || "";
+  document.querySelector("#inventory-rest-start").value = selectedBean.restStartDay;
+  document.querySelector("#inventory-rest-end").value = selectedBean.restEndDay;
+  document.querySelector("#inventory-total-weight").value = selectedBean.totalWeight;
+  document.querySelector("#inventory-current-weight").value = selectedBean.currentWeight;
+  document.querySelector("#inventory-low-stock").value = selectedBean.lowStockThreshold;
+
+  const status = getBeanInventoryStatus(selectedBean);
+  restCopy.textContent = `当前养豆第 ${status.restDay} 天 · 建议在第 ${selectedBean.restStartDay}-${selectedBean.restEndDay} 天冲`;
+  stockCopy.textContent = `${selectedBean.currentWeight}g / ${selectedBean.totalWeight}g，${
+    status.isLowStock ? "已经接近补货线" : "库存还比较从容"
+  }。`;
 }
 
 function renderRecentBrews() {
@@ -292,7 +461,7 @@ function renderRecentBrews() {
 
     <div class="detail-block">
       <p><strong>本次冲煮</strong></p>
-      <p class="supporting">${escapeHtml(displayText(hoveredBrew.dripper))} · ${escapeHtml(displayText(hoveredBrew.grinder))} · ${escapeHtml(displayText(hoveredBrew.filters))} · ${escapeHtml(displayText(hoveredBrew.ratio))} · ${escapeHtml(displayText(hoveredBrew.temp))}</p>
+      <p class="supporting">${escapeHtml(displayText(hoveredBrew.dripper))} · ${escapeHtml(displayText(hoveredBrew.grinder))} · ${escapeHtml(displayText(hoveredBrew.filters))} · ${escapeHtml(displayText(hoveredBrew.dose ? `${hoveredBrew.dose}g` : ""))} · ${escapeHtml(displayText(hoveredBrew.ratio))} · ${escapeHtml(displayText(hoveredBrew.temp))}</p>
     </div>
 
     <div class="detail-block">
@@ -325,6 +494,7 @@ function renderSuggestion() {
 }
 
 function prefillBrewForm() {
+  brewBeanSelect.value = state.beanInventoryState.activeBeanId || "";
   document.querySelector("#brew-bean").value = state.activeBean.name;
   document.querySelector("#brew-roaster").value = state.activeBean.roaster || "";
   document.querySelector("#brew-farm").value = state.activeBean.farm || "";
@@ -336,6 +506,7 @@ function prefillBrewForm() {
   document.querySelector("#brew-dripper").value = getActiveEquipmentProfile().dripper;
   document.querySelector("#brew-grinder").value = getActiveEquipmentProfile().grinder;
   document.querySelector("#brew-filters").value = getActiveEquipmentProfile().filters;
+  document.querySelector("#brew-dose").value = "15";
   document.querySelector("#brew-grind").value = state.activeSuggestion.grindGuidance;
   document.querySelector("#brew-ratio").value = state.activeSuggestion.ratio;
   document.querySelector("#brew-temp").value = state.activeSuggestion.waterTemp;
@@ -346,6 +517,7 @@ function prefillBrewForm() {
 
 function loadBrewIntoForm(brew) {
   state.editingBrewId = brew.id;
+  brewBeanSelect.value = brew.beanId || "";
   document.querySelector("#brew-bean").value = brew.bean || "";
   document.querySelector("#brew-roaster").value = brew.roaster || "";
   document.querySelector("#brew-farm").value = brew.farm || "";
@@ -357,6 +529,7 @@ function loadBrewIntoForm(brew) {
   document.querySelector("#brew-dripper").value = brew.dripper || "";
   document.querySelector("#brew-grinder").value = brew.grinder || "";
   document.querySelector("#brew-filters").value = brew.filters || "";
+  document.querySelector("#brew-dose").value = brew.dose || "";
   document.querySelector("#brew-grind").value = brew.grind || "";
   document.querySelector("#brew-ratio").value = brew.ratio || "";
   document.querySelector("#brew-temp").value = brew.temp || "";
@@ -387,6 +560,13 @@ function persistEquipment() {
   );
 }
 
+function persistBeanInventory() {
+  localStorage.setItem(
+    BEAN_INVENTORY_STORAGE_KEY,
+    JSON.stringify(state.beanInventoryState)
+  );
+}
+
 function populateEquipmentSelects() {
   equipmentFields.forEach((field) => {
     const select = document.querySelector(`#equipment-${field}`);
@@ -402,6 +582,7 @@ function populateEquipmentSelects() {
 function populateBrewDripperOptions() {
   const brewDripperSelect = document.querySelector("#brew-dripper");
   const filterDripperSelect = document.querySelector("#filter-dripper");
+  const currentBrewDripper = brewDripperSelect.value;
   const optionSet = new Set([
     ...equipmentCatalog.dripper,
     ...legacyDripperOptions,
@@ -413,6 +594,7 @@ function populateBrewDripperOptions() {
   brewDripperSelect.innerHTML = dripperOptions
     .map((option) => `<option value="${option}">${option}</option>`)
     .join("");
+  brewDripperSelect.value = currentBrewDripper || getActiveEquipmentProfile().dripper;
 
   filterDripperSelect.innerHTML = [
     '<option value="all">全部</option>',
@@ -420,6 +602,17 @@ function populateBrewDripperOptions() {
   ].join("");
 
   filterDripperSelect.value = state.filters.dripper;
+}
+
+function populateBrewBeanOptions() {
+  const currentBeanId = brewBeanSelect.value;
+  brewBeanSelect.innerHTML = [
+    '<option value="">暂不关联库存豆子</option>',
+    ...state.beanInventoryState.beans.map(
+      (bean) => `<option value="${bean.id}">${bean.name}</option>`
+    ),
+  ].join("");
+  brewBeanSelect.value = currentBeanId || state.beanInventoryState.activeBeanId || "";
 }
 
 function readEquipmentField(field) {
@@ -437,8 +630,12 @@ function refreshSuggestionForCurrentContext() {
 
 function renderAll() {
   populateBrewDripperOptions();
+  populateBrewBeanOptions();
   renderEquipment();
   renderEquipmentProfiles();
+  renderInventorySummary();
+  renderBeanInventoryProfiles();
+  renderBeanInventoryEditor();
   renderRecentBrews();
   renderSuggestion();
   renderBrewSummary();
@@ -528,6 +725,7 @@ brewForm.addEventListener("submit", (event) => {
   const formData = new FormData(brewForm);
   const brew = buildBrewEntry({
     bean: formData.get("bean"),
+    beanId: formData.get("beanId"),
     roaster: formData.get("roaster"),
     farm: formData.get("farm"),
     origin: formData.get("origin"),
@@ -538,6 +736,7 @@ brewForm.addEventListener("submit", (event) => {
     dripper: formData.get("dripper"),
     grinder: formData.get("grinder"),
     filters: formData.get("filters"),
+    dose: formData.get("dose"),
     grind: formData.get("grind"),
     ratio: formData.get("ratio"),
     temp: formData.get("temp"),
@@ -552,14 +751,30 @@ brewForm.addEventListener("submit", (event) => {
   const finalBrew = state.editingBrewId
     ? { ...brew, id: state.editingBrewId }
     : brew;
+  const previousBrew = state.editingBrewId
+    ? state.brews.find((entry) => entry.id === state.editingBrewId) || null
+    : null;
 
   state.brews = state.editingBrewId
     ? updateBrewEntry(state.brews, finalBrew)
     : [finalBrew, ...state.brews];
+  if (
+    previousBrew?.beanId ||
+    (finalBrew.beanId && finalBrew.dose > 0)
+  ) {
+    state.beanInventoryState = applyBrewInventoryChange(
+      state.beanInventoryState,
+      previousBrew,
+      finalBrew
+    );
+    persistBeanInventory();
+  }
   state.editingBrewId = null;
   persistBrews();
-  renderRecentBrews();
-  saveFeedback.textContent = `已保存 ${finalBrew.bean} 这杯记录。`;
+  renderAll();
+  saveFeedback.textContent = finalBrew.beanId && finalBrew.dose > 0
+    ? `已保存 ${finalBrew.bean}，并自动扣减 ${finalBrew.dose}g 库存。`
+    : `已保存 ${finalBrew.bean} 这杯记录。`;
   setView("home");
 });
 
@@ -665,6 +880,112 @@ equipmentProfileList.addEventListener("click", (event) => {
   renderEquipmentProfiles();
 });
 
+beanInventoryList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-bean-id]");
+  if (!button) {
+    return;
+  }
+
+  state.selectedInventoryBeanId = button.dataset.beanId;
+  renderBeanInventoryProfiles();
+  renderBeanInventoryEditor();
+});
+
+beanInventoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(beanInventoryForm);
+  const nextId = state.selectedInventoryBeanId || `bean-${Date.now()}`;
+  state.beanInventoryState = updateBeanProfile(
+    state.beanInventoryState,
+    buildBeanProfile({
+      id: nextId,
+      name: formData.get("name"),
+      roaster: formData.get("roaster"),
+      farm: formData.get("farm"),
+      origin: formData.get("origin"),
+      variety: formData.get("variety"),
+      process: formData.get("process"),
+      roastLevel: formData.get("roastLevel"),
+      roastDate: formData.get("roastDate"),
+      openedDate: formData.get("openedDate"),
+      restStartDay: formData.get("restStartDay"),
+      restEndDay: formData.get("restEndDay"),
+      totalWeight: formData.get("totalWeight"),
+      currentWeight: formData.get("currentWeight"),
+      lowStockThreshold: formData.get("lowStockThreshold"),
+    })
+  );
+  state.selectedInventoryBeanId = nextId;
+  if (!state.beanInventoryState.activeBeanId) {
+    state.beanInventoryState = setActiveBeanProfile(state.beanInventoryState, nextId);
+  }
+  persistBeanInventory();
+  renderAll();
+  beanInventoryFeedback.textContent = "豆子库存已保存。";
+});
+
+document.querySelector("#new-bean").addEventListener("click", () => {
+  state.selectedInventoryBeanId = "";
+  renderBeanInventoryProfiles();
+  renderBeanInventoryEditor();
+  beanInventoryFeedback.textContent = "正在新建一支库存豆子。";
+});
+
+document.querySelector("#set-default-bean").addEventListener("click", () => {
+  if (!state.selectedInventoryBeanId) {
+    beanInventoryFeedback.textContent = "先选择一支豆子，再设为默认。";
+    return;
+  }
+
+  state.beanInventoryState = setActiveBeanProfile(
+    state.beanInventoryState,
+    state.selectedInventoryBeanId
+  );
+  persistBeanInventory();
+  renderAll();
+  beanInventoryFeedback.textContent = "当前豆子已设为默认。";
+});
+
+document.querySelector("#delete-bean").addEventListener("click", () => {
+  if (!state.selectedInventoryBeanId) {
+    beanInventoryFeedback.textContent = "先选择一支豆子，再删除。";
+    return;
+  }
+
+  state.beanInventoryState = removeBeanProfile(
+    state.beanInventoryState,
+    state.selectedInventoryBeanId
+  );
+  state.selectedInventoryBeanId = state.beanInventoryState.activeBeanId || "";
+  persistBeanInventory();
+  renderAll();
+  beanInventoryFeedback.textContent = "当前豆子已从库存里移除。";
+});
+
+brewBeanSelect.addEventListener("change", () => {
+  const bean = state.beanInventoryState.beans.find(
+    (entry) => entry.id === brewBeanSelect.value
+  );
+
+  if (!bean) {
+    return;
+  }
+
+  state.activeBean = beanProfileToActiveBean(bean);
+  refreshSuggestionForCurrentContext();
+  document.querySelector("#brew-bean").value = bean.name;
+  document.querySelector("#brew-roaster").value = bean.roaster || "";
+  document.querySelector("#brew-farm").value = bean.farm || "";
+  document.querySelector("#brew-origin").value = bean.origin || "";
+  document.querySelector("#brew-variety").value = bean.variety || "";
+  document.querySelector("#brew-process").value = bean.process || "";
+  document.querySelector("#brew-roast-level").value = bean.roastLevel || "";
+  document.querySelector("#brew-roast-date").value = bean.roastDate || "";
+  renderSuggestion();
+  renderBrewSummary();
+});
+
 document.querySelector("#recent-brews").addEventListener("pointermove", (event) => {
   if (!window.matchMedia("(hover: hover)").matches) {
     return;
@@ -755,6 +1076,7 @@ document
 
 populateEquipmentSelects();
 state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
+state.selectedInventoryBeanId = state.beanInventoryState.activeBeanId;
 refreshSuggestionForCurrentContext();
 renderAll();
 bindRatingOutput();

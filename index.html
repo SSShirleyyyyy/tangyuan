@@ -31,6 +31,7 @@
         <nav class="nav-pills" aria-label="Primary">
           <button class="nav-pill is-active" data-view-target="home">首页</button>
           <button class="nav-pill" data-view-target="brew">记录一杯</button>
+          <button class="nav-pill" data-view-target="inventory">豆子库存</button>
           <button class="nav-pill" data-view-target="equipment">设备档案</button>
         </nav>
 
@@ -105,17 +106,27 @@
               </div>
             </section>
 
-            <section class="profile-card">
-              <p class="card-kicker">Equipment Profile</p>
-              <h2>Equipment Profile</h2>
-              <p class="profile-caption">当前默认设备组合会被记录页和拍照建议作为默认上下文使用。</p>
-              <p id="equipment-profile-name" class="summary-title"></p>
-              <ul class="detail-list">
-                <li><span>滤杯</span><strong id="equipment-summary-dripper"></strong></li>
-                <li><span>研磨器</span><strong id="equipment-summary-grinder"></strong></li>
-                <li><span>滤纸</span><strong id="equipment-summary-filters"></strong></li>
-              </ul>
-            </section>
+            <div class="home-side-stack">
+              <section class="profile-card">
+                <p class="card-kicker">Equipment Profile</p>
+                <h2>Equipment Profile</h2>
+                <p class="profile-caption">当前默认设备组合会被记录页和拍照建议作为默认上下文使用。</p>
+                <p id="equipment-profile-name" class="summary-title"></p>
+                <ul class="detail-list">
+                  <li><span>滤杯</span><strong id="equipment-summary-dripper"></strong></li>
+                  <li><span>研磨器</span><strong id="equipment-summary-grinder"></strong></li>
+                  <li><span>滤纸</span><strong id="equipment-summary-filters"></strong></li>
+                </ul>
+              </section>
+
+              <section class="profile-card">
+                <p class="card-kicker">Bean Inventory</p>
+                <h2>豆子库存</h2>
+                <p id="inventory-summary-copy" class="profile-caption"></p>
+                <div id="inventory-summary-stats" class="inventory-status-grid"></div>
+                <ul id="inventory-summary-list" class="detail-list compact-detail-list"></ul>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -232,6 +243,10 @@
                     <h3>豆子信息</h3>
                   </div>
                   <div class="sheet-grid">
+                    <label class="field full-span">
+                      <span class="field-label">关联库存豆子</span>
+                      <select id="brew-bean-id" name="beanId"></select>
+                    </label>
                     <label class="field">
                       <span class="field-label">豆子名称</span>
                       <input id="brew-bean" name="bean" type="text" />
@@ -294,6 +309,10 @@
                     <label class="field">
                       <span class="field-label">滤纸</span>
                       <input id="brew-filters" name="filters" type="text" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">粉量 (g)</span>
+                      <input id="brew-dose" name="dose" type="number" min="0" step="0.1" />
                     </label>
                   </div>
                 </section>
@@ -416,6 +435,103 @@
                     <button id="new-profile" class="secondary-button" type="button">新建设备组合</button>
                     <button id="delete-profile" class="secondary-button danger-button" type="button">删除当前组合</button>
                     <p id="equipment-feedback" class="supporting profile-feedback" aria-live="polite"></p>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="inventory">
+          <div class="panel equipment-page">
+            <div class="section-heading">
+              <p class="card-kicker">Bean Inventory</p>
+              <h2>豆子库存</h2>
+              <p class="supporting">记录每支豆子的烘焙时间、养豆窗口和剩余克数，让记录页自动扣减库存。</p>
+            </div>
+
+            <div class="equipment-layout">
+              <section class="equipment-profiles-sheet">
+                <div class="sheet-heading">
+                  <p class="card-kicker">Saved Beans</p>
+                  <h3>库存豆子</h3>
+                </div>
+                <div id="bean-inventory-list" class="equipment-profile-list"></div>
+              </section>
+
+              <section class="equipment-editor-sheet">
+                <form id="bean-inventory-form" class="equipment-form">
+                  <label class="field compact-field">
+                    <span class="field-label">豆子名称</span>
+                    <input id="inventory-bean-name" name="name" type="text" placeholder="例如：Las Flores Gesha" />
+                  </label>
+                  <div class="sheet-grid">
+                    <label class="field compact-field">
+                      <span class="field-label">烘焙商</span>
+                      <input id="inventory-roaster" name="roaster" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">庄园 / 处理站</span>
+                      <input id="inventory-farm" name="farm" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">产区 / 国家</span>
+                      <input id="inventory-origin" name="origin" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">品种</span>
+                      <input id="inventory-variety" name="variety" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">处理方式</span>
+                      <input id="inventory-process" name="process" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">烘焙度</span>
+                      <input id="inventory-roast-level" name="roastLevel" type="text" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">烘焙日期</span>
+                      <input id="inventory-roast-date" name="roastDate" type="date" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">开封日期</span>
+                      <input id="inventory-opened-date" name="openedDate" type="date" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">建议起始天数</span>
+                      <input id="inventory-rest-start" name="restStartDay" type="number" min="0" step="1" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">建议结束天数</span>
+                      <input id="inventory-rest-end" name="restEndDay" type="number" min="0" step="1" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">总重量 (g)</span>
+                      <input id="inventory-total-weight" name="totalWeight" type="number" min="0" step="1" />
+                    </label>
+                    <label class="field compact-field">
+                      <span class="field-label">当前剩余 (g)</span>
+                      <input id="inventory-current-weight" name="currentWeight" type="number" min="0" step="1" />
+                    </label>
+                    <label class="field compact-field full-span">
+                      <span class="field-label">补货提醒阈值 (g)</span>
+                      <input id="inventory-low-stock" name="lowStockThreshold" type="number" min="0" step="1" />
+                    </label>
+                  </div>
+
+                  <section class="summary-card inventory-note">
+                    <p class="card-kicker">Resting Window</p>
+                    <p id="inventory-rest-copy" class="summary-headline"></p>
+                    <p id="inventory-stock-copy" class="supporting"></p>
+                  </section>
+
+                  <div class="profile-actions">
+                    <button class="profile-save" type="submit">保存豆子库存</button>
+                    <button id="set-default-bean" class="secondary-button" type="button">设为默认豆子</button>
+                    <button id="new-bean" class="secondary-button" type="button">新建豆子</button>
+                    <button id="delete-bean" class="secondary-button danger-button" type="button">删除当前豆子</button>
+                    <p id="bean-inventory-feedback" class="supporting profile-feedback" aria-live="polite"></p>
                   </div>
                 </form>
               </section>
