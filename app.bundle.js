@@ -575,6 +575,52 @@
     return nextState;
   }
 
+  // src/data-backup.js
+  var BACKUP_SCHEMA = "pourover-journal-backup";
+  var BACKUP_VERSION = 1;
+  function buildBackupPayload({
+    brews,
+    equipmentState,
+    beanInventoryState,
+    createdAt = (/* @__PURE__ */ new Date()).toISOString()
+  }) {
+    return {
+      schema: BACKUP_SCHEMA,
+      version: BACKUP_VERSION,
+      createdAt,
+      data: {
+        brews,
+        equipmentState,
+        beanInventoryState
+      }
+    };
+  }
+  function buildBackupFilename(isoLikeDate = (/* @__PURE__ */ new Date()).toISOString()) {
+    const day = new Date(isoLikeDate).toISOString().slice(0, 10);
+    return `pourover-journal-backup-${day}.json`;
+  }
+  function restoreBackupPayload(serializedValue) {
+    let parsed;
+    try {
+      parsed = JSON.parse(serializedValue);
+    } catch {
+      throw new Error("Invalid backup: unable to parse JSON.");
+    }
+    if (!parsed || parsed.schema !== BACKUP_SCHEMA || !parsed.data || typeof parsed.data !== "object") {
+      throw new Error("Invalid backup: unexpected backup format.");
+    }
+    return {
+      brews: initializeBrews(JSON.stringify(parsed.data.brews || []), []),
+      equipmentState: initializeEquipmentState(
+        JSON.stringify(parsed.data.equipmentState || {}),
+        equipmentProfile
+      ),
+      beanInventoryState: initializeBeanInventoryState(
+        JSON.stringify(parsed.data.beanInventoryState || {})
+      )
+    };
+  }
+
   // app.js
   var views = [...document.querySelectorAll("[data-view]")];
   var navButtons = [...document.querySelectorAll("[data-view-target]")];
@@ -584,6 +630,9 @@
   var equipmentForm = document.querySelector("#equipment-form");
   var equipmentFeedback = document.querySelector("#equipment-feedback");
   var equipmentNameInput = document.querySelector("#equipment-name");
+  var exportBackupButton = document.querySelector("#export-backup");
+  var importBackupInput = document.querySelector("#import-backup");
+  var backupFeedback = document.querySelector("#backup-feedback");
   var beanInventoryForm = document.querySelector("#bean-inventory-form");
   var beanInventoryFeedback = document.querySelector("#bean-inventory-feedback");
   var beanInventoryList = document.querySelector("#bean-inventory-list");
@@ -711,6 +760,11 @@
     return state.equipmentState.profiles.find(
       (profile) => profile.id === state.selectedEquipmentProfileId
     ) || getActiveEquipmentProfile();
+  }
+  function getActiveInventoryBean() {
+    return state.beanInventoryState.beans.find(
+      (bean) => bean.id === state.beanInventoryState.activeBeanId
+    ) || state.beanInventoryState.beans[0] || null;
   }
   function getSelectedInventoryBean() {
     return state.beanInventoryState.beans.find(
@@ -1050,6 +1104,24 @@
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+  function downloadBackup() {
+    const payload = buildBackupPayload({
+      brews: state.brews,
+      equipmentState: state.equipmentState,
+      beanInventoryState: state.beanInventoryState
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json"
+    });
+    const url2 = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url2;
+    link.download = buildBackupFilename(payload.createdAt);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url2);
   }
   async function handleInventoryPhotoUpload(file) {
     if (!file) {
@@ -1495,6 +1567,42 @@
           customInput.focus();
         }
       });
+    });
+    exportBackupButton.addEventListener("click", () => {
+      downloadBackup();
+      backupFeedback.textContent = "\u5DF2\u5BFC\u51FA\u5F53\u524D\u6D4F\u89C8\u5668\u91CC\u7684\u5168\u90E8\u8BB0\u5F55\u3001\u8BBE\u5907\u6863\u6848\u548C\u8C46\u5B50\u5E93\u5B58\u3002";
+    });
+    importBackupInput.addEventListener("change", async (event) => {
+      const [file] = event.target.files || [];
+      if (!file) {
+        return;
+      }
+      try {
+        const contents = await file.text();
+        const restored = restoreBackupPayload(contents);
+        state.brews = restored.brews;
+        state.equipmentState = restored.equipmentState;
+        state.beanInventoryState = restored.beanInventoryState;
+        state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
+        state.selectedInventoryBeanId = "";
+        const activeBean = getActiveInventoryBean();
+        if (activeBean) {
+          state.activeBean = beanProfileToActiveBean(activeBean);
+        }
+        refreshSuggestionForCurrentContext();
+        persistBrews();
+        persistEquipment();
+        persistBeanInventory();
+        renderAll();
+        if (!state.editingBrewId && isBrewFormPristine()) {
+          prefillBrewForm();
+        }
+        backupFeedback.textContent = "\u5907\u4EFD\u5DF2\u6062\u590D\u5230\u5F53\u524D\u6D4F\u89C8\u5668\u3002";
+      } catch (error) {
+        backupFeedback.textContent = error instanceof Error ? error.message : "\u5BFC\u5165\u5931\u8D25\uFF0C\u8BF7\u786E\u8BA4\u5907\u4EFD\u6587\u4EF6\u662F\u5426\u5B8C\u6574\u3002";
+      } finally {
+        importBackupInput.value = "";
+      }
     });
     photoUpload.addEventListener("change", async (event) => {
       const [file] = event.target.files || [];
