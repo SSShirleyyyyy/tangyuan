@@ -23,7 +23,7 @@ test("buildSuggestion tunes recipe for bright washed beans on V60", () => {
   assert.equal(suggestion.ratio, "1:16");
   assert.equal(suggestion.waterTemp, "93C");
   assert.equal(suggestion.pours.length, 3);
-  assert.match(suggestion.headline, /bright/i);
+  assert.match(suggestion.headline, /起始方案/);
 });
 
 test("buildSuggestion shifts fuller for flat-bottom drippers and sweet preference", () => {
@@ -42,8 +42,28 @@ test("buildSuggestion shifts fuller for flat-bottom drippers and sweet preferenc
 
   assert.equal(suggestion.ratio, "1:15");
   assert.equal(suggestion.waterTemp, "91C");
-  assert.match(suggestion.headline, /sweet/i);
-  assert.match(suggestion.notes, /body/i);
+  assert.match(suggestion.headline, /起始方案/);
+  assert.match(suggestion.notes, /甜感|口感/);
+});
+
+test("buildSuggestion tolerates missing bean descriptors", () => {
+  const suggestion = buildSuggestion({
+    bean: {
+      process: "",
+      roastLevel: "",
+      flavorFocus: "",
+    },
+    equipment: {
+      dripper: "V60",
+      grinder: "Comandante C40",
+      tastePreference: "clean_bright",
+    },
+  });
+
+  assert.equal(suggestion.ratio, "1:16");
+  assert.equal(suggestion.waterTemp, "93C");
+  assert.match(suggestion.headline, /起始方案/);
+  assert.match(suggestion.notes, /风味|方向/);
 });
 
 test("formatGrindGuidance maps grinder scales to friendly guidance", () => {

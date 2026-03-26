@@ -6,6 +6,7 @@ import {
   filterBrews,
   initializeBrews,
   removeBrewEntry,
+  resolveBrewBeanDetails,
   updateBrewEntry,
 } from "../src/brew-store.js";
 
@@ -109,4 +110,67 @@ test("removeBrewEntry deletes a saved brew by id", () => {
 
   assert.equal(remaining.length, 1);
   assert.equal(remaining[0].id, "brew-2");
+});
+
+test("resolveBrewBeanDetails prefers the linked inventory bean when one is selected", () => {
+  const details = resolveBrewBeanDetails({
+    linkedBean: {
+      name: "SL28",
+      roaster: "SEY",
+      farm: "Gachatha",
+      origin: "Kenya",
+      variety: "SL28",
+      process: "Washed",
+      roastLevel: "Light",
+      roastDate: "2026-03-22",
+    },
+    fallbackBean: {
+      name: "Las Flores Gesha",
+      roaster: "Northbound Coffee",
+      farm: "Las Flores",
+      origin: "Huila, Colombia",
+      variety: "Gesha",
+      process: "Washed",
+      roastLevel: "Light",
+      roastDate: "2026-03-18",
+    },
+  });
+
+  assert.deepEqual(details, {
+    name: "SL28",
+    roaster: "SEY",
+    farm: "Gachatha",
+    origin: "Kenya",
+    variety: "SL28",
+    process: "Washed",
+    roastLevel: "Light",
+    roastDate: "2026-03-22",
+  });
+});
+
+test("resolveBrewBeanDetails falls back to the active bean when no inventory bean is linked", () => {
+  const details = resolveBrewBeanDetails({
+    linkedBean: null,
+    fallbackBean: {
+      name: "Las Flores Gesha",
+      roaster: "Northbound Coffee",
+      farm: "Las Flores",
+      origin: "Huila, Colombia",
+      variety: "Gesha",
+      process: "Washed",
+      roastLevel: "Light",
+      roastDate: "2026-03-18",
+    },
+  });
+
+  assert.deepEqual(details, {
+    name: "Las Flores Gesha",
+    roaster: "Northbound Coffee",
+    farm: "Las Flores",
+    origin: "Huila, Colombia",
+    variety: "Gesha",
+    process: "Washed",
+    roastLevel: "Light",
+    roastDate: "2026-03-18",
+  });
 });

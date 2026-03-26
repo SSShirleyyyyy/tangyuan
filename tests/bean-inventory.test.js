@@ -52,6 +52,7 @@ test("buildBeanProfile trims values and applies stock defaults", () => {
     totalWeight: "200",
     currentWeight: "",
     lowStockThreshold: "",
+    photoDataUrl: "data:image/jpeg;base64,abc",
   });
 
   assert.equal(bean.name, "Las Flores Gesha");
@@ -60,6 +61,7 @@ test("buildBeanProfile trims values and applies stock defaults", () => {
   assert.equal(bean.totalWeight, 200);
   assert.equal(bean.currentWeight, 200);
   assert.equal(bean.lowStockThreshold, 30);
+  assert.equal(bean.photoDataUrl, "data:image/jpeg;base64,abc");
 });
 
 test("calculateRestDay measures roast age in whole days", () => {

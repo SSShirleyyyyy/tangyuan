@@ -37,6 +37,7 @@ export function buildBeanProfile(input) {
     totalWeight,
     currentWeight,
     lowStockThreshold: clampNumber(input.lowStockThreshold, 30),
+    photoDataUrl: withTrimmedFallback(input.photoDataUrl, ""),
   };
 }
 

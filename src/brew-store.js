@@ -53,6 +53,21 @@ export function buildBrewEntry(formValues) {
   };
 }
 
+export function resolveBrewBeanDetails({ linkedBean, fallbackBean }) {
+  const source = linkedBean || fallbackBean || {};
+
+  return {
+    name: source.name || "",
+    roaster: source.roaster || "",
+    farm: source.farm || "",
+    origin: source.origin || "",
+    variety: source.variety || "",
+    process: source.process || "",
+    roastLevel: source.roastLevel || "",
+    roastDate: source.roastDate || "",
+  };
+}
+
 export function filterBrews(
   brews,
   { beanQuery = "", dripper = "all", minRating = 0 }

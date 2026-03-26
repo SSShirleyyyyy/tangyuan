@@ -23,14 +23,12 @@ const DRIPPER_PROFILES = {
 
 const PREFERENCE_COPY = {
   clean_bright: {
-    headline: "Bright and articulate cup",
-    notes:
-      "Lean into clarity with slightly higher temperature and a quicker finish.",
+    headline: "清晰明亮的起始方案",
+    notes: "水温可以略高一点，尾段收得更快，让层次和干净度更立起来。",
   },
   sweet_round: {
-    headline: "Sweet and round comfort cup",
-    notes:
-      "Use a slightly tighter ratio to emphasize body and rounded sweetness.",
+    headline: "甜感圆润的起始方案",
+    notes: "粉水比可以稍微收紧一点，让甜感和口感更集中。",
   },
 };
 
@@ -55,15 +53,15 @@ export function buildSuggestion({ bean, equipment }) {
     DRIPPER_PROFILES[equipment.dripper] || DRIPPER_PROFILES.V60;
   const preference =
     PREFERENCE_COPY[equipment.tastePreference] || PREFERENCE_COPY.clean_bright;
+  const flavorFocus =
+    String(bean.flavorFocus || "").trim().replaceAll(/,\s*/g, "、") || "干净甜感";
 
   return {
     ratio: dripperProfile.ratio,
     waterTemp: dripperProfile.waterTemp,
     pours: dripperProfile.pours,
-    headline: `${preference.headline} for ${bean.process.toLowerCase()} ${
-      bean.roastLevel.toLowerCase()
-    } roasts`,
-    notes: `${preference.notes} Aim for ${bean.flavorFocus.toLowerCase()} while keeping body in balance.`,
+    headline: preference.headline,
+    notes: `${preference.notes} 这一杯可以先朝着${flavorFocus}的方向去冲。`,
     grindGuidance: formatGrindGuidance(
       equipment.grinder,
       dripperProfile.grindBand
