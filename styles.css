@@ -473,6 +473,21 @@ button {
   border-top: 1px solid rgba(72, 52, 37, 0.08);
 }
 
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: 18px;
+}
+
+.backup-import-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .brews-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

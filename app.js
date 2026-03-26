@@ -51,6 +51,11 @@ import {
   setActiveBeanProfile,
   updateBeanProfile,
 } from "./src/bean-inventory.js";
+import {
+  buildBackupFilename,
+  buildBackupPayload,
+  restoreBackupPayload,
+} from "./src/data-backup.js";
 
 const views = [...document.querySelectorAll("[data-view]")];
 const navButtons = [...document.querySelectorAll("[data-view-target]")];
@@ -60,6 +65,9 @@ const saveFeedback = document.querySelector("#save-feedback");
 const equipmentForm = document.querySelector("#equipment-form");
 const equipmentFeedback = document.querySelector("#equipment-feedback");
 const equipmentNameInput = document.querySelector("#equipment-name");
+const exportBackupButton = document.querySelector("#export-backup");
+const importBackupInput = document.querySelector("#import-backup");
+const backupFeedback = document.querySelector("#backup-feedback");
 const beanInventoryForm = document.querySelector("#bean-inventory-form");
 const beanInventoryFeedback = document.querySelector("#bean-inventory-feedback");
 const beanInventoryList = document.querySelector("#bean-inventory-list");
@@ -628,6 +636,25 @@ async function fileToDataUrl(file) {
   });
 }
 
+function downloadBackup() {
+  const payload = buildBackupPayload({
+    brews: state.brews,
+    equipmentState: state.equipmentState,
+    beanInventoryState: state.beanInventoryState,
+  });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = buildBackupFilename(payload.createdAt);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function handleInventoryPhotoUpload(file) {
   if (!file) {
     return;
@@ -1165,6 +1192,46 @@ equipmentFields.forEach((field) => {
       customInput.focus();
     }
   });
+});
+
+exportBackupButton.addEventListener("click", () => {
+  downloadBackup();
+  backupFeedback.textContent = "已导出当前浏览器里的全部记录、设备档案和豆子库存。";
+});
+
+importBackupInput.addEventListener("change", async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+
+  try {
+    const contents = await file.text();
+    const restored = restoreBackupPayload(contents);
+    state.brews = restored.brews;
+    state.equipmentState = restored.equipmentState;
+    state.beanInventoryState = restored.beanInventoryState;
+    state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
+    state.selectedInventoryBeanId = "";
+    const activeBean = getActiveInventoryBean();
+    if (activeBean) {
+      state.activeBean = beanProfileToActiveBean(activeBean);
+    }
+    refreshSuggestionForCurrentContext();
+    persistBrews();
+    persistEquipment();
+    persistBeanInventory();
+    renderAll();
+    if (!state.editingBrewId && isBrewFormPristine()) {
+      prefillBrewForm();
+    }
+    backupFeedback.textContent = "备份已恢复到当前浏览器。";
+  } catch (error) {
+    backupFeedback.textContent =
+      error instanceof Error ? error.message : "导入失败，请确认备份文件是否完整。";
+  } finally {
+    importBackupInput.value = "";
+  }
 });
 
 photoUpload.addEventListener("change", async (event) => {
