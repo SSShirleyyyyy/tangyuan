@@ -1,0 +1,18 @@
+{
+  "name": "Pourover Journal",
+  "short_name": "Pourover",
+  "description": "本地优先的手冲记录应用，记录每一杯冲煮、库存豆子和设备组合。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#f4efe6",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

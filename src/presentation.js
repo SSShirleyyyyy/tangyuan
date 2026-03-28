@@ -122,12 +122,12 @@ export function formatInventoryDeductionPreview({
   dose,
 }) {
   if (!String(beanName || "").trim()) {
-    return "关联库存豆子后，保存这杯时会按粉量自动扣减库存。";
+    return "未关联库存，不会扣减。";
   }
 
   const nextDose = Number(dose) || 0;
   if (nextDose <= 0) {
-    return `已关联 ${beanName}，保存后会按粉量自动扣减库存。`;
+    return `已关联 ${beanName}。`;
   }
 
   const remaining = Math.max(0, Number(currentWeight) - nextDose);
@@ -154,10 +154,10 @@ export function formatSuggestionSummary({
 
 export function getUnlinkedInventoryStateCopy() {
   return {
-    title: "还没关联库存豆子",
-    meta: "想让这杯自动扣减库存的话，先从上面选一支豆子。",
-    copy: "不关联也可以照常记录，只是这杯不会进入库存与养豆提醒。",
-    optionLabel: "先不关联库存",
+    title: "暂不关联库存豆子",
+    meta: "这杯不会扣减库存。",
+    copy: "可直接保存记录。",
+    optionLabel: "不关联库存豆子",
   };
 }
 

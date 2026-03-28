@@ -1,5 +1,16 @@
 export const BREW_STORAGE_KEY = "pourover-journal-brews-v2";
 
+export const EMPTY_BREW_BEAN_DETAILS = {
+  name: "",
+  roaster: "",
+  farm: "",
+  origin: "",
+  variety: "",
+  process: "",
+  roastLevel: "",
+  roastDate: "",
+};
+
 function formatBrewDate(date = new Date()) {
   const month = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -32,6 +43,7 @@ export function buildBrewEntry(formValues) {
     date: formatBrewDate(),
     bean: formValues.bean.trim(),
     beanId: formValues.beanId?.trim() || "",
+    equipmentProfileId: formValues.equipmentProfileId?.trim() || "",
     roaster: formValues.roaster?.trim() || "",
     farm: formValues.farm?.trim() || "",
     origin: formValues.origin?.trim() || "",
@@ -57,15 +69,31 @@ export function resolveBrewBeanDetails({ linkedBean, fallbackBean }) {
   const source = linkedBean || fallbackBean || {};
 
   return {
-    name: source.name || "",
-    roaster: source.roaster || "",
-    farm: source.farm || "",
-    origin: source.origin || "",
-    variety: source.variety || "",
-    process: source.process || "",
-    roastLevel: source.roastLevel || "",
-    roastDate: source.roastDate || "",
+    name: source.name || EMPTY_BREW_BEAN_DETAILS.name,
+    roaster: source.roaster || EMPTY_BREW_BEAN_DETAILS.roaster,
+    farm: source.farm || EMPTY_BREW_BEAN_DETAILS.farm,
+    origin: source.origin || EMPTY_BREW_BEAN_DETAILS.origin,
+    variety: source.variety || EMPTY_BREW_BEAN_DETAILS.variety,
+    process: source.process || EMPTY_BREW_BEAN_DETAILS.process,
+    roastLevel: source.roastLevel || EMPTY_BREW_BEAN_DETAILS.roastLevel,
+    roastDate: source.roastDate || EMPTY_BREW_BEAN_DETAILS.roastDate,
   };
+}
+
+export function resolveInitialBrewBeanDetails({
+  linkedBean,
+  fallbackBean,
+  useFallbackBean = false,
+}) {
+  if (linkedBean) {
+    return resolveBrewBeanDetails({ linkedBean, fallbackBean: null });
+  }
+
+  if (useFallbackBean) {
+    return resolveBrewBeanDetails({ linkedBean: null, fallbackBean });
+  }
+
+  return { ...EMPTY_BREW_BEAN_DETAILS };
 }
 
 export function filterBrews(

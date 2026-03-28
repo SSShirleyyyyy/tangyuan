@@ -1,5 +1,4 @@
 import {
-  analyzedBean,
   equipmentProfile as defaultEquipmentProfile,
   seedBrews,
 } from "./src/mock-data.js";
@@ -20,15 +19,17 @@ import {
   filterBrews,
   initializeBrews,
   removeBrewEntry,
+  resolveInitialBrewBeanDetails,
   resolveBrewBeanDetails,
   updateBrewEntry,
 } from "./src/brew-store.js";
 import {
+  classifyPhotoAnalysisFailure,
   extractBeanDetailsFromText,
   inferBeanFromPhoto,
   inferPhotoLabel,
+  mergeDetectedBean,
 } from "./src/photo-analysis.js";
-import { buildSuggestion } from "./src/recommendation.js";
 import {
   EQUIPMENT_STORAGE_KEY,
   buildEquipmentProfile,
@@ -58,28 +59,37 @@ import {
 } from "./src/data-backup.js";
 
 const views = [...document.querySelectorAll("[data-view]")];
-const navButtons = [...document.querySelectorAll("[data-view-target]")];
+const viewButtons = [...document.querySelectorAll("[data-view-target]")];
+const navButtons = [...document.querySelectorAll("[data-nav-tab='true']")];
 const brewForm = document.querySelector("#brew-form");
 const brewDetail = document.querySelector("#brew-detail");
 const saveFeedback = document.querySelector("#save-feedback");
 const equipmentForm = document.querySelector("#equipment-form");
 const equipmentFeedback = document.querySelector("#equipment-feedback");
+const equipmentListFeedback = document.querySelector("#equipment-list-feedback");
 const equipmentNameInput = document.querySelector("#equipment-name");
 const exportBackupButton = document.querySelector("#export-backup");
 const importBackupInput = document.querySelector("#import-backup");
 const backupFeedback = document.querySelector("#backup-feedback");
 const beanInventoryForm = document.querySelector("#bean-inventory-form");
 const beanInventoryFeedback = document.querySelector("#bean-inventory-feedback");
+const beanInventoryListFeedback = document.querySelector("#bean-inventory-list-feedback");
 const beanInventoryList = document.querySelector("#bean-inventory-list");
 const saveBeanButton = document.querySelector("#save-bean");
 const inventoryPhotoUpload = document.querySelector("#inventory-photo-upload");
 const inventoryPhotoPreview = document.querySelector("#inventory-photo-preview");
+const inventoryPhotoPreviewFrame = document.querySelector("#inventory-photo-preview-frame");
+const inventoryPhotoTitle = document.querySelector("#inventory-photo-title");
+const inventoryPhotoMeta = document.querySelector("#inventory-photo-meta");
 const photoUpload = document.querySelector("#photo-upload");
 const photoPreview = document.querySelector("#photo-preview");
+const photoPreviewFrame = document.querySelector("#photo-preview-frame");
 const photoAssistPanel = document.querySelector("#photo-assist-panel");
 const ocrStatus = document.querySelector("#ocr-status");
 const equipmentProfileList = document.querySelector("#equipment-profile-list");
 const brewBeanSelect = document.querySelector("#brew-bean-id");
+const brewEquipmentProfileSelect = document.querySelector("#brew-equipment-profile");
+const brewBeanStatusCard = document.querySelector("#brew-bean-status-card");
 const brewBeanStatusTitle = document.querySelector("#brew-bean-status-title");
 const brewBeanStatusMeta = document.querySelector("#brew-bean-status-meta");
 const brewBeanStatusCopy = document.querySelector("#brew-bean-status-copy");
@@ -93,6 +103,15 @@ const assistFields = {
   roastDate: document.querySelector("#assist-roast-date"),
   flavorFocus: document.querySelector("#assist-flavor-focus"),
 };
+const inventoryAssistFields = {
+  roaster: document.querySelector("#inventory-assist-roaster"),
+  farm: document.querySelector("#inventory-assist-farm"),
+  origin: document.querySelector("#inventory-assist-origin"),
+  variety: document.querySelector("#inventory-assist-variety"),
+  process: document.querySelector("#inventory-assist-process"),
+  roastDate: document.querySelector("#inventory-assist-roast-date"),
+  flavorFocus: document.querySelector("#inventory-assist-flavor-focus"),
+};
 const equipmentFields = [
   "dripper",
   "grinder",
@@ -104,6 +123,13 @@ const url = new URL(window.location.href);
 if (url.searchParams.get("reset-brews") === "1") {
   localStorage.setItem(BREW_STORAGE_KEY, "[]");
   url.searchParams.delete("reset-brews");
+  window.history.replaceState({}, "", url.toString());
+}
+if (url.searchParams.get("reset-all") === "1") {
+  localStorage.setItem(BREW_STORAGE_KEY, "[]");
+  localStorage.removeItem(EQUIPMENT_STORAGE_KEY);
+  localStorage.removeItem(BEAN_INVENTORY_STORAGE_KEY);
+  url.searchParams.delete("reset-all");
   window.history.replaceState({}, "", url.toString());
 }
 
@@ -123,14 +149,8 @@ const state = {
     dripper: "all",
     minRating: 0,
   },
-  activeBean: analyzedBean,
-  activeSuggestion: buildSuggestion({
-    bean: analyzedBean,
-    equipment: initializeEquipmentState(
-      localStorage.getItem(EQUIPMENT_STORAGE_KEY),
-      defaultEquipmentProfile
-    ).profiles[0],
-  }),
+  activeBean: createEmptyBeanDetails(),
+  assistBean: createEmptyBeanDetails(),
   hoveredBrewId: null,
   selectedBrewId: null,
   editingBrewId: null,
@@ -139,7 +159,7 @@ const state = {
   inventoryPhotoDataUrl: "",
 };
 
-let ocrWorkerPromise;
+const ocrWorkerCache = new Map();
 
 function reportBootError(error, stage = "unknown") {
   const message = error instanceof Error ? error.message : String(error);
@@ -163,6 +183,61 @@ function displayText(value, fallback = "-") {
   return nextValue || fallback;
 }
 
+function createEmptyBeanDetails() {
+  return {
+    name: "",
+    roaster: "",
+    farm: "",
+    origin: "",
+    variety: "",
+    process: "",
+    roastLevel: "",
+    flavorFocus: "",
+    roastDate: "",
+  };
+}
+
+function readInventoryBeanFormDetails() {
+  return {
+    name: document.querySelector("#inventory-bean-name")?.value || "",
+    roaster: document.querySelector("#inventory-roaster")?.value || "",
+    farm: document.querySelector("#inventory-farm")?.value || "",
+    origin: document.querySelector("#inventory-origin")?.value || "",
+    variety: document.querySelector("#inventory-variety")?.value || "",
+    process: document.querySelector("#inventory-process")?.value || "",
+    roastLevel: document.querySelector("#inventory-roast-level")?.value || "",
+    roastDate: document.querySelector("#inventory-roast-date")?.value || "",
+    flavorFocus: "",
+  };
+}
+
+function renderInventoryPhotoSummary(details = createEmptyBeanDetails()) {
+  inventoryPhotoTitle.textContent = compactText(details.name) || "待识别";
+  inventoryPhotoMeta.textContent = [
+    compactText(details.roaster),
+    compactText(details.origin),
+    compactText(details.roastDate) ? `烘焙 ${compactText(details.roastDate)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  inventoryAssistFields.roaster.textContent = displayText(details.roaster, "—");
+  inventoryAssistFields.farm.textContent = displayText(details.farm, "—");
+  inventoryAssistFields.origin.textContent = displayText(details.origin, "—");
+  inventoryAssistFields.variety.textContent = displayText(details.variety, "—");
+  inventoryAssistFields.process.textContent = displayText(details.process, "—");
+  inventoryAssistFields.roastDate.textContent = displayText(details.roastDate, "—");
+  inventoryAssistFields.flavorFocus.textContent = displayText(
+    details.flavorFocus,
+    "—"
+  );
+}
+
+function setPhotoPreviewVisibility(previewElement, frameElement, hasImage) {
+  previewElement.classList.toggle("has-image", hasImage);
+  frameElement.classList.toggle("is-empty", !hasImage);
+}
+
 function truncateText(value, maxLength) {
   const nextValue = compactText(value);
   if (!nextValue) {
@@ -176,6 +251,14 @@ function truncateText(value, maxLength) {
   return `${nextValue.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
+function setBrewDetailVisibility(isVisible) {
+  brewDetail.classList.toggle("is-hidden", !isVisible);
+  brewDetail.toggleAttribute("hidden", !isVisible);
+  document
+    .querySelector(".brews-shell")
+    ?.classList.toggle("is-single-column", !isVisible);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -185,26 +268,140 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-async function getOcrWorker() {
+async function getOcrWorker(language) {
   if (!globalThis.Tesseract?.createWorker) {
     return null;
   }
 
-  if (!ocrWorkerPromise) {
-    ocrWorkerPromise = globalThis.Tesseract.createWorker("eng");
+  if (!ocrWorkerCache.has(language)) {
+    ocrWorkerCache.set(language, globalThis.Tesseract.createWorker(language));
   }
 
-  return ocrWorkerPromise;
+  return ocrWorkerCache.get(language);
+}
+
+async function loadImageBitmapFromFile(file) {
+  if (globalThis.createImageBitmap) {
+    return await globalThis.createImageBitmap(file);
+  }
+
+  const dataUrl = await fileToDataUrl(file);
+  const image = await new Promise((resolve, reject) => {
+    const nextImage = new Image();
+    nextImage.onload = () => resolve(nextImage);
+    nextImage.onerror = reject;
+    nextImage.src = dataUrl;
+  });
+
+  return image;
+}
+
+async function preprocessImageForOcr(file) {
+  const source = await loadImageBitmapFromFile(file);
+  const maxWidth = 1800;
+  const scale = source.width > maxWidth ? maxWidth / source.width : 1;
+  const width = Math.max(1, Math.round(source.width * scale));
+  const height = Math.max(1, Math.round(source.height * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d", {
+    willReadFrequently: true,
+  });
+
+  if (!context) {
+    return file;
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(source, 0, 0, width, height);
+
+  const imageData = context.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+  let min = 255;
+  let max = 0;
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    const luminance = Math.round(
+      pixels[index] * 0.299 +
+        pixels[index + 1] * 0.587 +
+        pixels[index + 2] * 0.114
+    );
+    min = Math.min(min, luminance);
+    max = Math.max(max, luminance);
+    pixels[index] = luminance;
+    pixels[index + 1] = luminance;
+    pixels[index + 2] = luminance;
+  }
+
+  const spread = Math.max(1, max - min);
+  const threshold = min + spread * 0.62;
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    const contrasted = ((pixels[index] - min) / spread) * 255;
+    const nextValue = contrasted > threshold ? 255 : 0;
+    pixels[index] = nextValue;
+    pixels[index + 1] = nextValue;
+    pixels[index + 2] = nextValue;
+  }
+
+  context.putImageData(imageData, 0, 0);
+
+  return await new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        resolve(blob || file);
+      },
+      "image/png",
+      1
+    );
+  });
 }
 
 async function recognizePhotoText(file) {
-  const worker = await getOcrWorker();
-  if (!worker) {
-    return "";
+  const [processedImage, englishWorker, chineseWorker] = await Promise.all([
+    preprocessImageForOcr(file),
+    getOcrWorker("eng"),
+    getOcrWorker("chi_sim"),
+  ]);
+
+  const textParts = [];
+
+  if (englishWorker) {
+    const originalResult = await englishWorker.recognize(file);
+    const processedResult = await englishWorker.recognize(processedImage);
+    textParts.push(originalResult?.data?.text || "", processedResult?.data?.text || "");
   }
 
-  const result = await worker.recognize(file);
-  return result?.data?.text?.trim() || "";
+  if (chineseWorker) {
+    const chineseResult = await chineseWorker.recognize(processedImage);
+    textParts.push(chineseResult?.data?.text || "");
+  }
+
+  return textParts
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function analyzePhotoWithModel(file, mode) {
+  const imageDataUrl = await fileToDataUrl(file);
+  const response = await fetch("/api/photo-analyze", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      imageDataUrl,
+      mode,
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "模型识别暂时不可用");
+  }
+
+  return await response.json();
 }
 
 function getActiveEquipmentProfile() {
@@ -219,8 +416,18 @@ function getSelectedEquipmentProfile() {
   return (
     state.equipmentState.profiles.find(
       (profile) => profile.id === state.selectedEquipmentProfileId
-    ) || getActiveEquipmentProfile()
+    ) || null
   );
+}
+
+function getEquipmentProfileById(profileId) {
+  return (
+    state.equipmentState.profiles.find((profile) => profile.id === profileId) || null
+  );
+}
+
+function getBrewEquipmentProfile(profileId = brewEquipmentProfileSelect?.value) {
+  return getEquipmentProfileById(profileId);
 }
 
 function getActiveInventoryBean() {
@@ -266,7 +473,7 @@ function beanProfileToActiveBean(bean) {
 }
 
 function getLinkedBeanForBrewForm(beanId = brewBeanSelect.value) {
-  const targetId = beanId || state.beanInventoryState.activeBeanId;
+  const targetId = beanId || "";
   if (!targetId) {
     return null;
   }
@@ -287,6 +494,23 @@ function applyBeanDetailsToBrewForm(details) {
   document.querySelector("#brew-roast-date").value = details.roastDate || "";
 }
 
+function clearBrewEquipmentForm() {
+  document.querySelector("#brew-dripper").value = "";
+  document.querySelector("#brew-grinder").value = "";
+  document.querySelector("#brew-filters").value = "";
+}
+
+function applyEquipmentProfileToBrewForm(profile) {
+  if (!profile) {
+    clearBrewEquipmentForm();
+    return;
+  }
+
+  document.querySelector("#brew-dripper").value = profile.dripper || "";
+  document.querySelector("#brew-grinder").value = profile.grinder || "";
+  document.querySelector("#brew-filters").value = profile.filters || "";
+}
+
 function renderBrewInlineExperience() {
   const linkedBean = state.beanInventoryState.beans.find(
     (bean) => bean.id === brewBeanSelect.value
@@ -294,8 +518,9 @@ function renderBrewInlineExperience() {
   const currentDose = Number(document.querySelector("#brew-dose")?.value) || 0;
 
   if (linkedBean) {
+    brewBeanStatusCard.hidden = false;
     const status = getBeanInventoryStatus(linkedBean);
-    brewBeanStatusTitle.textContent = linkedBean.name;
+    brewBeanStatusTitle.textContent = `已关联 ${linkedBean.name}`;
     brewBeanStatusMeta.textContent = formatBeanInventoryStatusLine({
       restDay: status.restDay,
       readiness: status.readiness,
@@ -308,10 +533,10 @@ function renderBrewInlineExperience() {
       dose: currentDose,
     });
   } else {
-    const unlinkedState = getUnlinkedInventoryStateCopy();
-    brewBeanStatusTitle.textContent = unlinkedState.title;
-    brewBeanStatusMeta.textContent = unlinkedState.meta;
-    brewBeanStatusCopy.textContent = unlinkedState.copy;
+    brewBeanStatusCard.hidden = true;
+    brewBeanStatusTitle.textContent = "";
+    brewBeanStatusMeta.textContent = "";
+    brewBeanStatusCopy.textContent = "";
   }
 }
 
@@ -344,20 +569,30 @@ function setView(nextView) {
     button.classList.toggle("is-active", button.dataset.viewTarget === nextView);
   });
 
-  if (nextView === "inventory") {
-    state.selectedInventoryBeanId = "";
-    renderBeanInventoryProfiles();
-    renderBeanInventoryEditor();
-  }
-
   if (nextView === "brew" && !state.editingBrewId && isBrewFormPristine()) {
     prefillBrewForm();
   }
+
+  if (nextView === "inventory") {
+    renderBeanInventoryProfiles();
+  }
+
+  if (nextView === "bean-editor") {
+    renderBeanInventoryEditor();
+  }
+
+  if (nextView === "equipment") {
+    renderEquipmentProfiles();
+  }
+
+  if (nextView === "equipment-editor") {
+    renderEquipmentEditor();
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
-function renderEquipment() {
-  const activeProfile = getActiveEquipmentProfile();
-
+function renderHomeDashboard() {
   document.querySelector("#hero-today-date").textContent = formatHeroDate(
     new Date().toISOString()
   );
@@ -365,17 +600,18 @@ function renderEquipment() {
   document.querySelector("#hero-bean-count").textContent = String(
     state.beanInventoryState.beans.length
   );
-  document.querySelector("#equipment-profile-name").textContent = activeProfile.name;
-  document.querySelector("#equipment-summary-dripper").textContent = activeProfile.dripper;
-  document.querySelector("#equipment-summary-grinder").textContent = activeProfile.grinder;
-  document.querySelector("#equipment-summary-filters").textContent = activeProfile.filters;
+}
 
+function renderEquipmentEditor() {
   const selectedProfile = getSelectedEquipmentProfile();
-  equipmentNameInput.value = selectedProfile.name;
+  const baseProfile = selectedProfile || getActiveEquipmentProfile();
+  const isEditing = Boolean(selectedProfile);
+
+  equipmentNameInput.value = selectedProfile?.name || "";
   equipmentFields.forEach((field) => {
     const select = document.querySelector(`#equipment-${field}`);
     const customInput = document.querySelector(`#equipment-${field}-custom`);
-    const value = selectedProfile[field];
+    const value = selectedProfile?.[field] || baseProfile[field];
     const options = equipmentCatalog[field];
     const isPreset = options.includes(value);
 
@@ -385,9 +621,41 @@ function renderEquipment() {
   });
 
   document.querySelector("#set-default-profile").disabled =
-    selectedProfile.id === state.equipmentState.activeProfileId;
+    !selectedProfile || selectedProfile.id === state.equipmentState.activeProfileId;
   document.querySelector("#delete-profile").disabled =
-    state.equipmentState.profiles.length === 1;
+    !selectedProfile || state.equipmentState.profiles.length === 1;
+  equipmentFeedback.textContent = isEditing
+    ? "更新这套组合。"
+    : "保存为新组合。";
+  renderEquipmentEditorPreview();
+}
+
+function renderEquipmentEditorPreview() {
+  const previewName = document.querySelector("#equipment-preview-name");
+  const previewSpecs = document.querySelector("#equipment-preview-specs");
+  const name = compactText(equipmentNameInput.value) || "未命名组合";
+  const profile = {
+    dripper: compactText(readEquipmentField("dripper")) || "待选滤杯",
+    grinder: compactText(readEquipmentField("grinder")) || "待选研磨器",
+    filters: compactText(readEquipmentField("filters")) || "待选滤纸",
+  };
+
+  previewName.textContent = name;
+  previewSpecs.innerHTML = getEquipmentProfileSpecs(profile)
+    .map(
+      (spec) => `
+        <div class="equipment-spec-row">
+          <span class="equipment-spec-icon" aria-hidden="true">${renderEquipmentSpecIcon(
+            spec.key
+          )}</span>
+          <span class="equipment-spec-copy">
+            <span class="equipment-spec-label">${escapeHtml(spec.label)}</span>
+            <strong>${escapeHtml(spec.value)}</strong>
+          </span>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function renderEquipmentProfiles() {
@@ -403,8 +671,8 @@ function renderEquipmentProfiles() {
                 spec.key
               )}</span>
               <span class="equipment-spec-copy">
-                <span class="equipment-spec-label">${spec.label}</span>
-                <strong>${spec.value}</strong>
+                <span class="equipment-spec-label">${escapeHtml(spec.label)}</span>
+                <strong>${escapeHtml(spec.value)}</strong>
               </span>
             </div>
           `
@@ -412,11 +680,24 @@ function renderEquipmentProfiles() {
         .join("");
 
       return `
-        <button class="equipment-profile-item ${isSelected ? "is-selected" : ""}" data-profile-id="${profile.id}" type="button">
-          <strong>${profile.name}</strong>
+        <article class="equipment-profile-item equipment-profile-card ${isSelected ? "is-selected" : ""}" data-profile-id="${profile.id}">
+          <div class="inventory-bean-title-row">
+            <div class="equipment-profile-copy">
+              <strong>${escapeHtml(profile.name)}</strong>
+              <p class="equipment-profile-meta">${escapeHtml(
+                isDefault ? "默认组合" : "已保存组合"
+              )}</p>
+            </div>
+            <div class="brew-actions inventory-card-actions">
+              <button class="icon-button inventory-icon-button" type="button" data-action="edit-profile" data-profile-id="${profile.id}" aria-label="编辑设备组合">✍️</button>
+              <button class="icon-button inventory-icon-button" type="button" data-action="delete-profile-inline" data-profile-id="${profile.id}" aria-label="删除设备组合">🗑️</button>
+            </div>
+          </div>
           <div class="equipment-spec-list">${specs}</div>
-          <p class="supporting equipment-profile-status">${isDefault ? "默认组合" : "点按编辑"}</p>
-        </button>
+          <div class="inventory-chip-row">
+            ${isDefault ? '<span class="inventory-chip inventory-chip--default">默认组合</span>' : '<span class="inventory-chip">可编辑</span>'}
+          </div>
+        </article>
       `;
     })
     .join("");
@@ -461,7 +742,7 @@ function renderInventorySummary() {
   }));
 
   if (statuses.length === 0) {
-    summaryCopy.textContent = "还没有录入库存豆子，先在豆子库存页建一支常喝的豆。";
+    summaryCopy.textContent = "";
     summaryStats.innerHTML = "";
     summaryList.innerHTML = "";
     return;
@@ -473,8 +754,7 @@ function renderInventorySummary() {
   ).length;
   const lowStockCount = statuses.filter((status) => status.isLowStock).length;
 
-  summaryCopy.textContent =
-    "用养豆天数和剩余克数一起判断现在该冲哪支、哪支该补货。";
+  summaryCopy.textContent = "";
   summaryStats.innerHTML = `
     <div><span>适合冲</span><strong>${readyCount}</strong></div>
     <div><span>养豆中</span><strong>${restingCount}</strong></div>
@@ -514,7 +794,6 @@ function renderBeanInventoryProfiles() {
       <article class="inventory-empty-state">
         <p class="card-kicker">还没有豆子</p>
         <h4>先建第一支豆子</h4>
-        <p class="supporting">从右侧拍一张豆袋照，或者先手动录入一支常喝的豆子，库存和养豆状态就会开始工作。</p>
       </article>
     `;
     return;
@@ -526,7 +805,7 @@ function renderBeanInventoryProfiles() {
       const isSelected = bean.id === state.selectedInventoryBeanId;
       const isDefault = bean.id === state.beanInventoryState.activeBeanId;
       const metaParts = [bean.roaster, bean.process, bean.origin].filter(Boolean);
-      const metaLine = metaParts.length ? metaParts.join(" · ") : "等待补充这支豆子的来源与处理信息";
+      const metaLine = metaParts.length ? metaParts.join(" · ") : "待补充信息";
 
       return `
         <article class="equipment-profile-item inventory-profile-item ${isSelected ? "is-selected" : ""}" data-bean-id="${bean.id}">
@@ -565,7 +844,8 @@ function renderBeanInventoryEditor() {
   const selectedBean = getSelectedInventoryBean();
   const restCopy = document.querySelector("#inventory-rest-copy");
   const stockCopy = document.querySelector("#inventory-stock-copy");
-  const photoLabel = document.querySelector("#inventory-photo-label");
+  const inventoryNote = document.querySelector("#inventory-note");
+  const inventoryNoteChips = document.querySelector("#inventory-note-chips");
   const photoCopy = document.querySelector("#inventory-photo-copy");
   const photoStatus = document.querySelector("#inventory-photo-status");
   const editorMode = document.querySelector("#inventory-editor-mode");
@@ -574,14 +854,17 @@ function renderBeanInventoryEditor() {
   if (!selectedBean) {
     beanInventoryForm.reset();
     editorMode.textContent = "新建豆子";
-    editorCaption.textContent = "先放一张豆袋照片，或者从右侧直接录入字段，整理成一张完整的豆子库存卡。";
+    editorCaption.textContent = "拍照或直接录入。";
     saveBeanButton.textContent = "保存新豆子";
-    restCopy.textContent = "先新建一支豆子，才能开始追踪养豆与库存。";
-    stockCopy.textContent = "保存后，这支豆子就能在记录页里自动带入并扣减库存。";
-    inventoryPhotoPreview.classList.remove("has-image");
+    inventoryNote.hidden = true;
+    inventoryNoteChips.innerHTML = "";
+    restCopy.textContent = "";
+    stockCopy.textContent = "";
+    setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, false);
     inventoryPhotoPreview.removeAttribute("src");
-    photoLabel.textContent = "豆袋照片";
-    photoCopy.textContent = "照片会优先用于识别豆子基础信息，并作为库存豆子的封面。";
+    inventoryPhotoPreview.alt = "Inventory bean cover preview";
+    renderInventoryPhotoSummary(createEmptyBeanDetails());
+    photoCopy.textContent = "拍照后自动回填。";
     photoStatus.textContent = "";
     document.querySelector("#set-default-bean").disabled = true;
     document.querySelector("#delete-bean").disabled = true;
@@ -589,7 +872,7 @@ function renderBeanInventoryEditor() {
   }
 
   editorMode.textContent = `编辑豆子 · ${selectedBean.name}`;
-  editorCaption.textContent = "继续补齐来源、处理方式、养豆窗口与剩余克数，这些信息会直接影响首页和记录页的判断。";
+  editorCaption.textContent = "继续补齐这支豆子的档案。";
   saveBeanButton.textContent = "更新当前豆子";
   document.querySelector("#inventory-bean-name").value = selectedBean.name;
   document.querySelector("#inventory-roaster").value = selectedBean.roaster || "";
@@ -608,23 +891,71 @@ function renderBeanInventoryEditor() {
   state.inventoryPhotoDataUrl = selectedBean.photoDataUrl || "";
   if (selectedBean.photoDataUrl) {
     inventoryPhotoPreview.src = selectedBean.photoDataUrl;
-    inventoryPhotoPreview.classList.add("has-image");
+    setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, true);
   } else {
-    inventoryPhotoPreview.classList.remove("has-image");
+    setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, false);
     inventoryPhotoPreview.removeAttribute("src");
   }
-  photoLabel.textContent = selectedBean.name || "豆袋照片";
-  photoCopy.textContent = "这张照片会跟随豆子库存一起保存，方便回看和快速辨认。";
+  inventoryPhotoPreview.alt = selectedBean.name
+    ? `${selectedBean.name} cover`
+    : "Inventory bean cover preview";
+  renderInventoryPhotoSummary({
+    name: selectedBean.name,
+    roaster: selectedBean.roaster || "",
+    farm: selectedBean.farm || "",
+    origin: selectedBean.origin || "",
+    variety: selectedBean.variety || "",
+    process: selectedBean.process || "",
+    roastDate: selectedBean.roastDate || "",
+    flavorFocus: "",
+  });
+  photoCopy.textContent = "会更新封面和识别字段。";
   photoStatus.textContent = "";
 
   const status = getBeanInventoryStatus(selectedBean);
-  restCopy.textContent = `当前养豆第 ${status.restDay} 天 · 建议在第 ${selectedBean.restStartDay}-${selectedBean.restEndDay} 天冲`;
-  stockCopy.textContent = `${selectedBean.currentWeight}g / ${selectedBean.totalWeight}g，${
-    status.isLowStock ? "已经接近补货线" : "库存还比较从容"
-  }。`;
+  inventoryNote.hidden = false;
+  inventoryNoteChips.innerHTML = [
+    `<span class="inventory-chip">第 ${status.restDay} 天</span>`,
+    `<span class="inventory-chip inventory-chip--status">${escapeHtml(
+      getInventoryStatusCopy(status.readiness)
+    )}</span>`,
+    `<span class="inventory-chip">${selectedBean.currentWeight}g 剩余</span>`,
+    status.isLowStock
+      ? '<span class="inventory-chip inventory-chip--default">接近补货线</span>'
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  restCopy.textContent = `建议在第 ${selectedBean.restStartDay}-${selectedBean.restEndDay} 天冲。`;
+  stockCopy.textContent = `${selectedBean.currentWeight}g / ${selectedBean.totalWeight}g。`;
   document.querySelector("#set-default-bean").disabled =
     selectedBean.id === state.beanInventoryState.activeBeanId;
   document.querySelector("#delete-bean").disabled = false;
+}
+
+function clearInventoryPhotoPreview() {
+  state.inventoryPhotoDataUrl = "";
+  if (state.inventoryPreviewUrl) {
+    URL.revokeObjectURL(state.inventoryPreviewUrl);
+    state.inventoryPreviewUrl = "";
+  }
+}
+
+function openBeanEditor(beanId = "") {
+  state.selectedInventoryBeanId = beanId;
+  if (!beanId) {
+    clearInventoryPhotoPreview();
+  }
+  renderBeanInventoryProfiles();
+  renderBeanInventoryEditor();
+  setView("bean-editor");
+}
+
+function openEquipmentEditor(profileId = "") {
+  state.selectedEquipmentProfileId = profileId;
+  renderEquipmentProfiles();
+  renderEquipmentEditor();
+  setView("equipment-editor");
 }
 
 async function fileToDataUrl(file) {
@@ -667,34 +998,37 @@ async function handleInventoryPhotoUpload(file) {
   state.inventoryPreviewUrl = URL.createObjectURL(file);
   state.inventoryPhotoDataUrl = await fileToDataUrl(file);
   inventoryPhotoPreview.src = state.inventoryPreviewUrl;
-  inventoryPhotoPreview.classList.add("has-image");
-  document.querySelector("#inventory-photo-label").textContent = inferPhotoLabel(file);
-  document.querySelector("#inventory-photo-status").textContent = "正在识别包装文字…";
+  setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, true);
+  inventoryPhotoPreview.alt = inferPhotoLabel(file);
+  document.querySelector("#inventory-photo-status").textContent = "正在识别豆袋信息…";
 
   let nextBean = inferBeanFromPhoto(file);
 
   try {
-    const extractedText = await recognizePhotoText(file);
-    if (extractedText) {
-      nextBean = {
-        ...nextBean,
-        ...extractBeanDetailsFromText(extractedText),
-      };
-      document.querySelector("#inventory-photo-copy").textContent =
-        "已从豆袋图片里提取豆子信息，下面的库存档案字段已经回填。";
-      document.querySelector("#inventory-photo-status").textContent =
-        "OCR 已完成，识别结果已带入库存表单。";
-    } else {
-      document.querySelector("#inventory-photo-copy").textContent =
-        "没有读取到足够清晰的包装文字，已回退到文件名和本地规则推断。";
-      document.querySelector("#inventory-photo-status").textContent =
-        "OCR 未提取到有效文字，已回退到本地推断。";
-    }
-  } catch {
-    document.querySelector("#inventory-photo-copy").textContent =
-      "OCR 暂时不可用，已回退到文件名和本地规则推断。";
+    const modelResult = await analyzePhotoWithModel(file, "inventory");
+    nextBean = mergeDetectedBean(nextBean, modelResult.bean);
+    document.querySelector("#inventory-photo-copy").textContent = "已识别并回填。";
     document.querySelector("#inventory-photo-status").textContent =
-      "OCR 当前不可用，已使用本地推断。";
+      "识别完成";
+  } catch (error) {
+    const failureKind = classifyPhotoAnalysisFailure(
+      error instanceof Error ? error.message : String(error)
+    );
+    try {
+      const extractedText = await recognizePhotoText(file);
+      if (extractedText) {
+        nextBean = mergeDetectedBean(nextBean, extractBeanDetailsFromText(extractedText));
+        document.querySelector("#inventory-photo-copy").textContent = "已识别并回填。";
+        document.querySelector("#inventory-photo-status").textContent =
+          failureKind === "model_unavailable" ? "当前使用本地识别" : "识别完成";
+      } else {
+        document.querySelector("#inventory-photo-copy").textContent = "未识别到可靠字段。";
+        document.querySelector("#inventory-photo-status").textContent = "未提取到可靠字段。";
+      }
+    } catch {
+      document.querySelector("#inventory-photo-copy").textContent = "当前无法自动识别。";
+      document.querySelector("#inventory-photo-status").textContent = "暂时无法识别。";
+    }
   }
 
   document.querySelector("#inventory-bean-name").value = nextBean.name || "";
@@ -705,6 +1039,7 @@ async function handleInventoryPhotoUpload(file) {
   document.querySelector("#inventory-process").value = nextBean.process || "";
   document.querySelector("#inventory-roast-level").value = nextBean.roastLevel || "";
   document.querySelector("#inventory-roast-date").value = nextBean.roastDate || "";
+  renderInventoryPhotoSummary(nextBean);
 }
 
 function renderRecentBrews() {
@@ -717,15 +1052,14 @@ function renderRecentBrews() {
         <article class="brew-empty-state">
           <p class="card-kicker">还没有记录</p>
           <h4>先记下今天这杯</h4>
-          <p class="supporting">从一条简单的冲煮记录开始，或者先整理库存豆子，后面筛选和回看才会慢慢有意思。</p>
           <div class="brew-empty-actions">
             <button class="secondary-button" type="button" data-empty-target="brew">记录第一杯</button>
             <button class="secondary-button" type="button" data-empty-target="inventory">去建库存豆子</button>
           </div>
         </article>
       `;
-    brewDetail.innerHTML =
-      '<p class="supporting">把鼠标移到某条冲煮记录上，这里会显示它的完整信息。</p>';
+    brewDetail.innerHTML = "";
+    setBrewDetailVisibility(false);
     return;
   }
 
@@ -746,15 +1080,19 @@ function renderRecentBrews() {
           <div class="brew-date">${brew.date}</div>
           <div class="brew-main">
             <div class="brew-title-row">
-              <strong title="${escapeHtml(preview.title)}">${escapeHtml(
-                truncateText(preview.title, 56) || "-"
-              )}</strong>
+              <p class="brew-title-line">
+                <strong title="${escapeHtml(preview.title)}">${escapeHtml(
+                  truncateText(preview.title, 40) || "-"
+                )}</strong>
+                <span class="brew-supplier-inline">${escapeHtml(
+                  truncateText(preview.supplier, 32)
+                )}</span>
+              </p>
               <div class="brew-actions">
                 <button class="icon-button" type="button" data-action="edit" data-brew-id="${brew.id}" aria-label="编辑记录">✍️</button>
                 <button class="icon-button" type="button" data-action="delete" data-brew-id="${brew.id}" aria-label="删除记录">🗑️</button>
               </div>
             </div>
-            <p class="meta-line">${escapeHtml(preview.supplier)}</p>
           </div>
         </article>
       `;
@@ -766,11 +1104,12 @@ function renderRecentBrews() {
   const hoveredBrew = filteredBrews.find((brew) => brew.id === activeDetailId);
 
   if (!hoveredBrew) {
-    brewDetail.innerHTML =
-      '<p class="supporting">桌面端可悬停查看详情，手机端可点按某条记录查看详情。</p>';
+    brewDetail.innerHTML = "";
+    setBrewDetailVisibility(false);
     return;
   }
 
+  setBrewDetailVisibility(true);
   brewDetail.innerHTML = `
     <p class="card-kicker">Brew Detail</p>
     <h3 class="detail-title">${escapeHtml(displayText(hoveredBrew.bean))}</h3>
@@ -799,47 +1138,45 @@ function renderRecentBrews() {
 }
 
 function renderSuggestion() {
-  document.querySelector("#suggestion-bean-name").textContent = state.activeBean.name;
-  document.querySelector(
-    "#suggestion-meta"
-  ).textContent = `${state.activeBean.roaster} · ${state.activeBean.origin} · Roast ${state.activeBean.roastDate}`;
-  document.querySelector("#suggestion-ratio").textContent = state.activeSuggestion.ratio;
-  document.querySelector("#suggestion-temp").textContent = state.activeSuggestion.waterTemp;
-  document.querySelector("#suggestion-grind").textContent =
-    state.activeSuggestion.grindGuidance;
-  document.querySelector("#suggestion-process").textContent =
-    state.activeBean.process || "待识别";
+  const assistMeta = [
+    state.assistBean.roaster,
+    state.assistBean.origin,
+    state.assistBean.roastDate ? `Roast ${state.assistBean.roastDate}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
-  assistFields.name.value = state.activeBean.name || "";
-  assistFields.roaster.value = state.activeBean.roaster || "";
-  assistFields.farm.value = state.activeBean.farm || "";
-  assistFields.origin.value = state.activeBean.origin || "";
-  assistFields.variety.value = state.activeBean.variety || "";
-  assistFields.process.value = state.activeBean.process || "";
-  assistFields.roastDate.value = state.activeBean.roastDate || "";
-  assistFields.flavorFocus.value = state.activeBean.flavorFocus || "";
+  document.querySelector("#suggestion-bean-name").textContent = state.assistBean.name || "";
+  document.querySelector("#suggestion-meta").textContent = assistMeta;
+
+  assistFields.name.value = state.assistBean.name || "";
+  assistFields.roaster.value = state.assistBean.roaster || "";
+  assistFields.farm.value = state.assistBean.farm || "";
+  assistFields.origin.value = state.assistBean.origin || "";
+  assistFields.variety.value = state.assistBean.variety || "";
+  assistFields.process.value = state.assistBean.process || "";
+  assistFields.roastDate.value = state.assistBean.roastDate || "";
+  assistFields.flavorFocus.value = state.assistBean.flavorFocus || "";
 }
 
-function prefillBrewForm() {
-  brewBeanSelect.value = state.beanInventoryState.activeBeanId || "";
-  const linkedBean = getLinkedBeanForBrewForm();
-  if (linkedBean) {
-    state.activeBean = beanProfileToActiveBean(linkedBean);
-  }
+function prefillBrewForm({ useFallbackBean = false, useActiveEquipment = false } = {}) {
+  brewBeanSelect.value = "";
+  brewEquipmentProfileSelect.value = useActiveEquipment
+    ? state.equipmentState.activeProfileId || ""
+    : "";
   applyBeanDetailsToBrewForm(
-    resolveBrewBeanDetails({
-      linkedBean,
+    resolveInitialBrewBeanDetails({
+      linkedBean: null,
       fallbackBean: state.activeBean,
+      useFallbackBean,
     })
   );
-  document.querySelector("#brew-dripper").value = getActiveEquipmentProfile().dripper;
-  document.querySelector("#brew-grinder").value = getActiveEquipmentProfile().grinder;
-  document.querySelector("#brew-filters").value = getActiveEquipmentProfile().filters;
-  document.querySelector("#brew-dose").value = "15";
-  document.querySelector("#brew-grind").value = state.activeSuggestion.grindGuidance;
-  document.querySelector("#brew-ratio").value = state.activeSuggestion.ratio;
-  document.querySelector("#brew-temp").value = state.activeSuggestion.waterTemp;
-  document.querySelector("#brew-pours").value = formatPourPlan(state.activeSuggestion.pours);
+  applyEquipmentProfileToBrewForm(useActiveEquipment ? getBrewEquipmentProfile() : null);
+  document.querySelector("#brew-dose").value = "";
+  document.querySelector("#brew-grind").value = "";
+  document.querySelector("#brew-ratio").value = "";
+  document.querySelector("#brew-temp").value = "";
+  document.querySelector("#brew-pours").value = "";
   document.querySelector("#brew-notes").value = "";
   document.querySelector("#brew-rating").value = "4.5";
   document.querySelector("#brew-rating-output").textContent = "4.5";
@@ -849,6 +1186,7 @@ function prefillBrewForm() {
 function loadBrewIntoForm(brew) {
   state.editingBrewId = brew.id;
   brewBeanSelect.value = brew.beanId || "";
+  brewEquipmentProfileSelect.value = brew.equipmentProfileId || "";
   document.querySelector("#brew-bean").value = brew.bean || "";
   document.querySelector("#brew-roaster").value = brew.roaster || "";
   document.querySelector("#brew-farm").value = brew.farm || "";
@@ -903,10 +1241,23 @@ function populateEquipmentSelects() {
   });
 }
 
+function buildOptionMarkup(options, { placeholder = "", includeEmpty = false } = {}) {
+  const uniqueOptions = [...new Set(options.filter(Boolean))];
+  return [
+    includeEmpty || placeholder !== ""
+      ? `<option value="">${placeholder}</option>`
+      : "",
+    ...uniqueOptions.map((option) => `<option value="${option}">${option}</option>`),
+  ]
+    .filter(Boolean)
+    .join("");
+}
+
 function populateBrewDripperOptions() {
   const brewDripperSelect = document.querySelector("#brew-dripper");
   const filterDripperSelect = document.querySelector("#filter-dripper");
   const currentBrewDripper = brewDripperSelect.value;
+  const isEquipmentLinked = Boolean(brewEquipmentProfileSelect.value);
   const optionSet = new Set([
     ...equipmentCatalog.dripper,
     ...legacyDripperOptions,
@@ -915,10 +1266,9 @@ function populateBrewDripperOptions() {
   ]);
   const dripperOptions = [...optionSet];
 
-  brewDripperSelect.innerHTML = dripperOptions
-    .map((option) => `<option value="${option}">${option}</option>`)
-    .join("");
-  brewDripperSelect.value = currentBrewDripper || getActiveEquipmentProfile().dripper;
+  brewDripperSelect.innerHTML = buildOptionMarkup(dripperOptions, { includeEmpty: true });
+  brewDripperSelect.value =
+    currentBrewDripper || (isEquipmentLinked ? getActiveEquipmentProfile().dripper : "");
 
   filterDripperSelect.innerHTML = [
     '<option value="all">全部</option>',
@@ -926,6 +1276,40 @@ function populateBrewDripperOptions() {
   ].join("");
 
   filterDripperSelect.value = state.filters.dripper;
+}
+
+function populateBrewEquipmentProfileOptions() {
+  const currentProfileId = brewEquipmentProfileSelect.value;
+  const hasCurrentProfile = state.equipmentState.profiles.some(
+    (profile) => profile.id === currentProfileId
+  );
+  brewEquipmentProfileSelect.innerHTML = [
+    '<option value="">不关联设备库</option>',
+    ...state.equipmentState.profiles.map(
+      (profile) => `<option value="${profile.id}">${profile.name}</option>`
+    ),
+  ].join("");
+  brewEquipmentProfileSelect.value =
+    currentProfileId === ""
+      ? ""
+      : hasCurrentProfile
+        ? currentProfileId
+        : state.equipmentState.activeProfileId || "";
+}
+
+function populateBrewGrinderOptions() {
+  const brewGrinderSelect = document.querySelector("#brew-grinder");
+  const currentGrinder = brewGrinderSelect.value;
+  const isEquipmentLinked = Boolean(brewEquipmentProfileSelect.value);
+  const grinderOptions = [
+    ...equipmentCatalog.grinder,
+    ...state.equipmentState.profiles.map((profile) => profile.grinder),
+    ...state.brews.map((brew) => brew.grinder).filter(Boolean),
+  ];
+
+  brewGrinderSelect.innerHTML = buildOptionMarkup(grinderOptions, { includeEmpty: true });
+  brewGrinderSelect.value =
+    currentGrinder || (isEquipmentLinked ? getActiveEquipmentProfile().grinder || "" : "");
 }
 
 function populateBrewBeanOptions() {
@@ -937,7 +1321,7 @@ function populateBrewBeanOptions() {
       (bean) => `<option value="${bean.id}">${bean.name}</option>`
     ),
   ].join("");
-  brewBeanSelect.value = currentBeanId || state.beanInventoryState.activeBeanId || "";
+  brewBeanSelect.value = currentBeanId || "";
 }
 
 function readEquipmentField(field) {
@@ -946,18 +1330,14 @@ function readEquipmentField(field) {
   return select.value === CUSTOM_OPTION ? customInput.value : select.value;
 }
 
-function refreshSuggestionForCurrentContext() {
-  state.activeSuggestion = buildSuggestion({
-    bean: state.activeBean,
-    equipment: getActiveEquipmentProfile(),
-  });
-}
-
 function renderAll() {
+  populateBrewEquipmentProfileOptions();
   populateBrewDripperOptions();
+  populateBrewGrinderOptions();
   populateBrewBeanOptions();
-  renderEquipment();
+  renderHomeDashboard();
   renderEquipmentProfiles();
+  renderEquipmentEditor();
   renderInventorySummary();
   renderBeanInventoryProfiles();
   renderBeanInventoryEditor();
@@ -984,40 +1364,42 @@ async function handlePhotoUpload(file) {
 
   state.previewUrl = URL.createObjectURL(file);
   photoPreview.src = state.previewUrl;
-  photoPreview.classList.add("has-image");
-
-  document.querySelector("#photo-label").textContent = inferPhotoLabel(file);
-  ocrStatus.textContent = "正在识别包装文字…";
+  setPhotoPreviewVisibility(photoPreview, photoPreviewFrame, true);
+  photoPreview.alt = inferPhotoLabel(file);
+  ocrStatus.textContent = "正在调用视觉模型识别豆袋信息…";
 
   let nextBean = inferBeanFromPhoto(file);
 
   try {
-    const extractedText = await recognizePhotoText(file);
-    if (extractedText) {
-      nextBean = {
-        ...nextBean,
-        ...extractBeanDetailsFromText(extractedText),
-      };
+    const modelResult = await analyzePhotoWithModel(file, "brew");
+    nextBean = mergeDetectedBean(nextBean, modelResult.bean);
+    document.querySelector("#photo-notes-copy").textContent = "已完成模型识别。";
+    ocrStatus.textContent = `模型识别已完成${modelResult.model ? ` · ${modelResult.model}` : ""}`;
+  } catch (error) {
+    const failureKind = classifyPhotoAnalysisFailure(
+      error instanceof Error ? error.message : String(error)
+    );
+    try {
+      const extractedText = await recognizePhotoText(file);
+      if (extractedText) {
+        nextBean = mergeDetectedBean(nextBean, extractBeanDetailsFromText(extractedText));
+        document.querySelector("#photo-notes-copy").textContent = "当前使用本地识别。";
+        ocrStatus.textContent =
+          failureKind === "model_unavailable"
+            ? "未启用大模型 · 本地 OCR"
+            : "本地 OCR 已完成";
+      } else {
+        document.querySelector("#photo-notes-copy").textContent = "未识别到可靠字段。";
+        ocrStatus.textContent = "未提取到可靠字段。";
+      }
+    } catch {
       document.querySelector("#photo-notes-copy").textContent =
-        "已从图片包装文字中提取豆子信息，并生成当前设备组合下的起始建议。";
-      ocrStatus.textContent = "OCR 已完成，识别结果已带入摘要。";
-    } else {
-      document.querySelector("#photo-notes-copy").textContent =
-        "没有读取到足够清晰的包装文字，已回退到文件名和本地规则推断。";
-      ocrStatus.textContent = "OCR 未提取到有效文字，已回退到本地推断。";
+        "当前无法自动识别。";
+      ocrStatus.textContent = "模型和 OCR 当前都不可用。";
     }
-  } catch {
-    document.querySelector("#photo-notes-copy").textContent =
-      "OCR 暂时不可用，已回退到文件名和本地规则推断。";
-    ocrStatus.textContent = "OCR 当前不可用，已使用本地推断。";
   }
 
-  state.activeBean = nextBean;
-  state.activeSuggestion = buildSuggestion({
-    bean: state.activeBean,
-    equipment: getActiveEquipmentProfile(),
-  });
-
+  state.assistBean = nextBean;
   renderAll();
 }
 
@@ -1034,7 +1416,7 @@ function bindRatingOutput() {
 }
 
 try {
-navButtons.forEach((button) => {
+viewButtons.forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.viewTarget));
 });
 
@@ -1060,6 +1442,7 @@ brewForm.addEventListener("submit", (event) => {
   const brew = buildBrewEntry({
     bean: formData.get("bean"),
     beanId: formData.get("beanId"),
+    equipmentProfileId: formData.get("equipmentProfileId"),
     roaster: formData.get("roaster"),
     farm: formData.get("farm"),
     origin: formData.get("origin"),
@@ -1077,9 +1460,7 @@ brewForm.addEventListener("submit", (event) => {
     pours: formData.get("pours"),
     notes: formData.get("notes"),
     rating: formData.get("rating"),
-    source: document.querySelector("#brew-bean").value === state.activeBean.name
-      ? "suggestion"
-      : "manual",
+    source: formData.get("beanId") ? "inventory" : "manual",
   });
 
   const finalBrew = state.editingBrewId
@@ -1116,55 +1497,51 @@ equipmentForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const selectedProfile = getSelectedEquipmentProfile();
-  state.equipmentState = updateEquipmentProfile(
-    state.equipmentState,
-    buildEquipmentProfile({
-      id: selectedProfile.id,
-      name: equipmentNameInput.value,
-      dripper: readEquipmentField("dripper"),
-      grinder: readEquipmentField("grinder"),
-      filters: readEquipmentField("filters"),
-    })
-  );
+  const nextProfile = buildEquipmentProfile({
+    id: selectedProfile?.id || `profile-${Date.now()}`,
+    name: equipmentNameInput.value,
+    dripper: readEquipmentField("dripper"),
+    grinder: readEquipmentField("grinder"),
+    filters: readEquipmentField("filters"),
+  });
+
+  state.equipmentState = selectedProfile
+    ? updateEquipmentProfile(state.equipmentState, nextProfile)
+    : {
+        ...state.equipmentState,
+        profiles: [...state.equipmentState.profiles, nextProfile],
+      };
+  state.selectedEquipmentProfileId = nextProfile.id;
   persistEquipment();
-  refreshSuggestionForCurrentContext();
   renderAll();
-  equipmentFeedback.textContent = "设备档案已更新，并已同步到建议和默认值。";
+  equipmentListFeedback.textContent = selectedProfile
+    ? "设备组合已更新。"
+    : "新设备组合已加入列表。";
+  setView("equipment");
 });
 
 document.querySelector("#set-default-profile").addEventListener("click", () => {
+  if (!state.selectedEquipmentProfileId) {
+    equipmentFeedback.textContent = "先保存这套组合，再设为默认。";
+    return;
+  }
+
   state.equipmentState = setActiveEquipmentProfile(
     state.equipmentState,
     state.selectedEquipmentProfileId
   );
   persistEquipment();
-  refreshSuggestionForCurrentContext();
   renderAll();
   equipmentFeedback.textContent = "当前组合已设为默认设备档案。";
-});
-
-document.querySelector("#new-profile").addEventListener("click", () => {
-  const nextId = `profile-${Date.now()}`;
-  const baseProfile = getActiveEquipmentProfile();
-  const nextProfile = buildEquipmentProfile({
-    id: nextId,
-    name: "新设备组合",
-    dripper: baseProfile.dripper,
-    grinder: baseProfile.grinder,
-    filters: baseProfile.filters,
-  });
-
-  state.equipmentState = {
-    ...state.equipmentState,
-    profiles: [...state.equipmentState.profiles, nextProfile],
-  };
-  state.selectedEquipmentProfileId = nextId;
-  persistEquipment();
-  renderAll();
-  equipmentFeedback.textContent = "已新建设备组合。";
+  equipmentListFeedback.textContent = "默认设备组合已更新。";
 });
 
 document.querySelector("#delete-profile").addEventListener("click", () => {
+  if (!state.selectedEquipmentProfileId) {
+    equipmentFeedback.textContent = "先打开一套已保存的组合，再删除。";
+    return;
+  }
+
   if (state.equipmentState.profiles.length === 1) {
     equipmentFeedback.textContent = "至少需要保留一套设备组合。";
     return;
@@ -1176,9 +1553,9 @@ document.querySelector("#delete-profile").addEventListener("click", () => {
   );
   state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
   persistEquipment();
-  refreshSuggestionForCurrentContext();
   renderAll();
-  equipmentFeedback.textContent = "当前设备组合已删除。";
+  equipmentListFeedback.textContent = "当前设备组合已删除。";
+  setView("equipment");
 });
 
 equipmentFields.forEach((field) => {
@@ -1192,6 +1569,11 @@ equipmentFields.forEach((field) => {
       customInput.focus();
     }
   });
+});
+
+document.querySelector("#new-equipment-profile").addEventListener("click", () => {
+  openEquipmentEditor("");
+  equipmentFeedback.textContent = "正在新建设备组合。";
 });
 
 exportBackupButton.addEventListener("click", () => {
@@ -1217,7 +1599,6 @@ importBackupInput.addEventListener("change", async (event) => {
     if (activeBean) {
       state.activeBean = beanProfileToActiveBean(activeBean);
     }
-    refreshSuggestionForCurrentContext();
     persistBrews();
     persistEquipment();
     persistBeanInventory();
@@ -1244,19 +1625,47 @@ document.querySelector("#toggle-photo-assist").addEventListener("click", () => {
 });
 
 equipmentProfileList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-profile-id]");
-  if (!button) {
+  const actionButton = event.target.closest("[data-action]");
+  const card = event.target.closest("[data-profile-id]");
+  if (!actionButton && !card) {
     return;
   }
 
-  state.selectedEquipmentProfileId = button.dataset.profileId;
-  renderEquipment();
-  renderEquipmentProfiles();
+  const profileId = actionButton?.dataset.profileId || card?.dataset.profileId;
+  if (!profileId) {
+    return;
+  }
+
+  if (actionButton?.dataset.action === "delete-profile-inline") {
+    if (state.equipmentState.profiles.length === 1) {
+      equipmentListFeedback.textContent = "至少需要保留一套设备组合。";
+      return;
+    }
+
+    state.equipmentState = removeEquipmentProfile(state.equipmentState, profileId);
+    if (state.selectedEquipmentProfileId === profileId) {
+      state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
+    }
+    persistEquipment();
+    renderAll();
+    equipmentListFeedback.textContent = "当前设备组合已删除。";
+    return;
+  }
+
+  openEquipmentEditor(profileId);
+  equipmentFeedback.textContent = "正在编辑这套设备组合。";
 });
 
 beanInventoryList.addEventListener("click", (event) => {
   const actionButton = event.target.closest("[data-action]");
+  const card = event.target.closest("[data-bean-id]");
   if (!actionButton) {
+    if (!card?.dataset.beanId) {
+      return;
+    }
+
+    openBeanEditor(card.dataset.beanId);
+    beanInventoryFeedback.textContent = "正在编辑这支库存豆子。";
     return;
   }
 
@@ -1266,9 +1675,7 @@ beanInventoryList.addEventListener("click", (event) => {
   }
 
   if (actionButton.dataset.action === "edit-bean") {
-    state.selectedInventoryBeanId = beanId;
-    renderBeanInventoryProfiles();
-    renderBeanInventoryEditor();
+    openBeanEditor(beanId);
     beanInventoryFeedback.textContent = "正在编辑这支库存豆子。";
     return;
   }
@@ -1281,10 +1688,10 @@ beanInventoryList.addEventListener("click", (event) => {
     if (state.selectedInventoryBeanId === beanId) {
       state.selectedInventoryBeanId = "";
     }
-    state.inventoryPhotoDataUrl = "";
+    clearInventoryPhotoPreview();
     persistBeanInventory();
     renderAll();
-    beanInventoryFeedback.textContent = "当前豆子已从库存里移除。";
+    beanInventoryListFeedback.textContent = "当前豆子已从库存里移除。";
   }
 });
 
@@ -1321,20 +1728,14 @@ beanInventoryForm.addEventListener("submit", (event) => {
   }
   persistBeanInventory();
   renderAll();
-  beanInventoryFeedback.textContent = isEditing
+  beanInventoryListFeedback.textContent = isEditing
     ? "当前豆子已更新。"
     : "新豆子已加入库存。";
+  setView("inventory");
 });
 
-document.querySelector("#new-bean").addEventListener("click", () => {
-  state.selectedInventoryBeanId = "";
-  state.inventoryPhotoDataUrl = "";
-  if (state.inventoryPreviewUrl) {
-    URL.revokeObjectURL(state.inventoryPreviewUrl);
-    state.inventoryPreviewUrl = "";
-  }
-  renderBeanInventoryProfiles();
-  renderBeanInventoryEditor();
+document.querySelector("#new-bean-listing").addEventListener("click", () => {
+  openBeanEditor("");
   beanInventoryFeedback.textContent = "正在新建一支库存豆子。";
 });
 
@@ -1358,6 +1759,7 @@ document.querySelector("#set-default-bean").addEventListener("click", () => {
   persistBeanInventory();
   renderAll();
   beanInventoryFeedback.textContent = "当前豆子已设为默认。";
+  beanInventoryListFeedback.textContent = "默认豆子已更新。";
 });
 
 document.querySelector("#delete-bean").addEventListener("click", () => {
@@ -1371,10 +1773,11 @@ document.querySelector("#delete-bean").addEventListener("click", () => {
     state.selectedInventoryBeanId
   );
   state.selectedInventoryBeanId = "";
-  state.inventoryPhotoDataUrl = "";
+  clearInventoryPhotoPreview();
   persistBeanInventory();
   renderAll();
-  beanInventoryFeedback.textContent = "当前豆子已从库存里移除。";
+  beanInventoryListFeedback.textContent = "当前豆子已从库存里移除。";
+  setView("inventory");
 });
 
 inventoryPhotoUpload.addEventListener("change", async (event) => {
@@ -1382,16 +1785,30 @@ inventoryPhotoUpload.addEventListener("change", async (event) => {
   await handleInventoryPhotoUpload(file);
 });
 
+beanInventoryForm.addEventListener("input", (event) => {
+  if (event.target === inventoryPhotoUpload) {
+    return;
+  }
+
+  renderInventoryPhotoSummary(readInventoryBeanFormDetails());
+});
+
 brewBeanSelect.addEventListener("change", () => {
   const bean = getLinkedBeanForBrewForm(brewBeanSelect.value);
 
   if (!bean) {
+    applyBeanDetailsToBrewForm(
+      resolveInitialBrewBeanDetails({
+        linkedBean: null,
+        fallbackBean: null,
+        useFallbackBean: false,
+      })
+    );
     renderBrewInlineExperience();
     return;
   }
 
   state.activeBean = beanProfileToActiveBean(bean);
-  refreshSuggestionForCurrentContext();
   applyBeanDetailsToBrewForm(
     resolveBrewBeanDetails({
       linkedBean: bean,
@@ -1400,6 +1817,11 @@ brewBeanSelect.addEventListener("change", () => {
   );
   renderSuggestion();
   renderBrewInlineExperience();
+});
+
+brewEquipmentProfileSelect.addEventListener("change", () => {
+  const profile = getBrewEquipmentProfile(brewEquipmentProfileSelect.value);
+  applyEquipmentProfileToBrewForm(profile);
 });
 
 document.querySelector("#recent-brews").addEventListener("pointermove", (event) => {
@@ -1478,8 +1900,8 @@ document.querySelector("#recent-brews").addEventListener("click", (event) => {
 document
   .querySelector("#apply-suggestion")
   .addEventListener("click", () => {
-    state.activeBean = {
-      ...state.activeBean,
+    state.assistBean = {
+      ...state.assistBean,
       name: assistFields.name.value.trim(),
       roaster: assistFields.roaster.value.trim(),
       farm: assistFields.farm.value.trim(),
@@ -1489,18 +1911,33 @@ document
       roastDate: assistFields.roastDate.value.trim(),
       flavorFocus: assistFields.flavorFocus.value.trim(),
     };
-    refreshSuggestionForCurrentContext();
+    state.activeBean = {
+      ...state.assistBean,
+    };
     renderSuggestion();
-    prefillBrewForm();
-    saveFeedback.textContent = "识别结果和建议参数已经带入记录页，可以继续调整后保存。";
+    brewBeanSelect.value = "";
+    applyBeanDetailsToBrewForm(state.activeBean);
+    renderBrewInlineExperience();
+    saveFeedback.textContent = "识别字段已带入当前记录。";
     setView("brew");
   });
 
 populateEquipmentSelects();
 state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
 state.selectedInventoryBeanId = "";
-refreshSuggestionForCurrentContext();
 renderAll();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener(
+    "load",
+    () => {
+      navigator.serviceWorker
+        .register("./service-worker.js?v=20260327-1")
+        .catch((error) => console.warn("[service worker]", error));
+    },
+    { once: true }
+  );
+}
 bindRatingOutput();
 setView("home");
   window.__appBootError = null;

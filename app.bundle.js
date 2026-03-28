@@ -1,69 +1,4 @@
 (() => {
-  // src/recommendation.js
-  var DRIPPER_PROFILES = {
-    V60: {
-      ratio: "1:16",
-      waterTemp: "93C",
-      grindBand: "medium-fine",
-      pours: [
-        { label: "Bloom", amount: "45g", time: "0:00-0:35" },
-        { label: "Second Pour", amount: "120g", time: "0:35-1:05" },
-        { label: "Final Pour", amount: "240g", time: "1:05-1:40" }
-      ]
-    },
-    "Kalita Wave": {
-      ratio: "1:15",
-      waterTemp: "91C",
-      grindBand: "medium",
-      pours: [
-        { label: "Bloom", amount: "50g", time: "0:00-0:35" },
-        { label: "Main Pour", amount: "150g", time: "0:35-1:15" },
-        { label: "Top Off", amount: "255g", time: "1:15-1:45" }
-      ]
-    }
-  };
-  var PREFERENCE_COPY = {
-    clean_bright: {
-      headline: "\u6E05\u6670\u660E\u4EAE\u7684\u8D77\u59CB\u65B9\u6848",
-      notes: "\u6C34\u6E29\u53EF\u4EE5\u7565\u9AD8\u4E00\u70B9\uFF0C\u5C3E\u6BB5\u6536\u5F97\u66F4\u5FEB\uFF0C\u8BA9\u5C42\u6B21\u548C\u5E72\u51C0\u5EA6\u66F4\u7ACB\u8D77\u6765\u3002"
-    },
-    sweet_round: {
-      headline: "\u751C\u611F\u5706\u6DA6\u7684\u8D77\u59CB\u65B9\u6848",
-      notes: "\u7C89\u6C34\u6BD4\u53EF\u4EE5\u7A0D\u5FAE\u6536\u7D27\u4E00\u70B9\uFF0C\u8BA9\u751C\u611F\u548C\u53E3\u611F\u66F4\u96C6\u4E2D\u3002"
-    }
-  };
-  var GRINDER_RANGES = {
-    "Comandante C40": {
-      "medium-fine": "22-24 clicks",
-      medium: "24-26 clicks"
-    },
-    "1Zpresso ZP6": {
-      "medium-fine": "4.3-4.7",
-      medium: "4.8-5.2"
-    }
-  };
-  function formatGrindGuidance(grinder, grindBand) {
-    var _a;
-    const mappedRange = (_a = GRINDER_RANGES[grinder]) == null ? void 0 : _a[grindBand];
-    return mappedRange ? `${grinder}: ${mappedRange}` : `${grinder}: ${grindBand}`;
-  }
-  function buildSuggestion({ bean, equipment }) {
-    const dripperProfile = DRIPPER_PROFILES[equipment.dripper] || DRIPPER_PROFILES.V60;
-    const preference = PREFERENCE_COPY[equipment.tastePreference] || PREFERENCE_COPY.clean_bright;
-    const flavorFocus = String(bean.flavorFocus || "").trim().replaceAll(/,\s*/g, "\u3001") || "\u5E72\u51C0\u751C\u611F";
-    return {
-      ratio: dripperProfile.ratio,
-      waterTemp: dripperProfile.waterTemp,
-      pours: dripperProfile.pours,
-      headline: preference.headline,
-      notes: `${preference.notes} \u8FD9\u4E00\u676F\u53EF\u4EE5\u5148\u671D\u7740${flavorFocus}\u7684\u65B9\u5411\u53BB\u51B2\u3002`,
-      grindGuidance: formatGrindGuidance(
-        equipment.grinder,
-        dripperProfile.grindBand
-      )
-    };
-  }
-
   // src/mock-data.js
   var equipmentProfile = {
     dripper: "HARIO V60 02",
@@ -71,26 +6,8 @@
     filters: "CAFEC Abaca 02",
     tastePreference: "clean_bright"
   };
-  var analyzedBean = {
-    name: "Las Flores Gesha",
-    roaster: "Northbound Coffee",
-    farm: "Las Flores",
-    origin: "Huila, Colombia",
-    variety: "Gesha",
-    process: "Washed",
-    roastLevel: "Light",
-    flavorFocus: "Jasmine, citrus, honey",
-    roastDate: "2026-03-18"
-  };
-  var suggestion = buildSuggestion({
-    bean: analyzedBean,
-    equipment: equipmentProfile
-  });
 
   // src/presentation.js
-  function formatPourPlan(pours) {
-    return pours.map((pour) => `${pour.label} ${pour.amount} ${pour.time}`).join("\n");
-  }
   function formatFilterDisplay(value) {
     const normalized = String(value || "").trim().toLowerCase();
     if (normalized === "fast") {
@@ -140,21 +57,21 @@
     dose
   }) {
     if (!String(beanName || "").trim()) {
-      return "\u5173\u8054\u5E93\u5B58\u8C46\u5B50\u540E\uFF0C\u4FDD\u5B58\u8FD9\u676F\u65F6\u4F1A\u6309\u7C89\u91CF\u81EA\u52A8\u6263\u51CF\u5E93\u5B58\u3002";
+      return "\u672A\u5173\u8054\u5E93\u5B58\uFF0C\u4E0D\u4F1A\u6263\u51CF\u3002";
     }
     const nextDose = Number(dose) || 0;
     if (nextDose <= 0) {
-      return `\u5DF2\u5173\u8054 ${beanName}\uFF0C\u4FDD\u5B58\u540E\u4F1A\u6309\u7C89\u91CF\u81EA\u52A8\u6263\u51CF\u5E93\u5B58\u3002`;
+      return `\u5DF2\u5173\u8054 ${beanName}\u3002`;
     }
     const remaining = Math.max(0, Number(currentWeight) - nextDose);
     return `\u5DF2\u5173\u8054 ${beanName}\uFF0C\u4FDD\u5B58\u540E\u4F1A\u6263\u51CF ${nextDose}g\uFF0C\u9884\u8BA1\u5269\u4F59 ${remaining}g\u3002`;
   }
   function getUnlinkedInventoryStateCopy() {
     return {
-      title: "\u8FD8\u6CA1\u5173\u8054\u5E93\u5B58\u8C46\u5B50",
-      meta: "\u60F3\u8BA9\u8FD9\u676F\u81EA\u52A8\u6263\u51CF\u5E93\u5B58\u7684\u8BDD\uFF0C\u5148\u4ECE\u4E0A\u9762\u9009\u4E00\u652F\u8C46\u5B50\u3002",
-      copy: "\u4E0D\u5173\u8054\u4E5F\u53EF\u4EE5\u7167\u5E38\u8BB0\u5F55\uFF0C\u53EA\u662F\u8FD9\u676F\u4E0D\u4F1A\u8FDB\u5165\u5E93\u5B58\u4E0E\u517B\u8C46\u63D0\u9192\u3002",
-      optionLabel: "\u5148\u4E0D\u5173\u8054\u5E93\u5B58"
+      title: "\u6682\u4E0D\u5173\u8054\u5E93\u5B58\u8C46\u5B50",
+      meta: "\u8FD9\u676F\u4E0D\u4F1A\u6263\u51CF\u5E93\u5B58\u3002",
+      copy: "\u53EF\u76F4\u63A5\u4FDD\u5B58\u8BB0\u5F55\u3002",
+      optionLabel: "\u4E0D\u5173\u8054\u5E93\u5B58\u8C46\u5B50"
     };
   }
   function formatRecentBrewSupplierLine({ roaster }) {
@@ -170,6 +87,16 @@
 
   // src/brew-store.js
   var BREW_STORAGE_KEY = "pourover-journal-brews-v2";
+  var EMPTY_BREW_BEAN_DETAILS = {
+    name: "",
+    roaster: "",
+    farm: "",
+    origin: "",
+    variety: "",
+    process: "",
+    roastLevel: "",
+    roastDate: ""
+  };
   function formatBrewDate(date = /* @__PURE__ */ new Date()) {
     const month = new Intl.DateTimeFormat("en-US", {
       month: "short",
@@ -192,29 +119,30 @@
     }
   }
   function buildBrewEntry(formValues) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
     return {
       id: `brew-${Date.now()}`,
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       date: formatBrewDate(),
       bean: formValues.bean.trim(),
       beanId: ((_a = formValues.beanId) == null ? void 0 : _a.trim()) || "",
-      roaster: ((_b = formValues.roaster) == null ? void 0 : _b.trim()) || "",
-      farm: ((_c = formValues.farm) == null ? void 0 : _c.trim()) || "",
-      origin: ((_d = formValues.origin) == null ? void 0 : _d.trim()) || "",
-      variety: ((_e = formValues.variety) == null ? void 0 : _e.trim()) || "",
-      process: ((_f = formValues.process) == null ? void 0 : _f.trim()) || "",
-      roastLevel: ((_g = formValues.roastLevel) == null ? void 0 : _g.trim()) || "",
-      roastDate: ((_h = formValues.roastDate) == null ? void 0 : _h.trim()) || "",
+      equipmentProfileId: ((_b = formValues.equipmentProfileId) == null ? void 0 : _b.trim()) || "",
+      roaster: ((_c = formValues.roaster) == null ? void 0 : _c.trim()) || "",
+      farm: ((_d = formValues.farm) == null ? void 0 : _d.trim()) || "",
+      origin: ((_e = formValues.origin) == null ? void 0 : _e.trim()) || "",
+      variety: ((_f = formValues.variety) == null ? void 0 : _f.trim()) || "",
+      process: ((_g = formValues.process) == null ? void 0 : _g.trim()) || "",
+      roastLevel: ((_h = formValues.roastLevel) == null ? void 0 : _h.trim()) || "",
+      roastDate: ((_i = formValues.roastDate) == null ? void 0 : _i.trim()) || "",
       dripper: formValues.dripper,
-      grinder: ((_i = formValues.grinder) == null ? void 0 : _i.trim()) || "",
-      filters: ((_j = formValues.filters) == null ? void 0 : _j.trim()) || "",
+      grinder: ((_j = formValues.grinder) == null ? void 0 : _j.trim()) || "",
+      filters: ((_k = formValues.filters) == null ? void 0 : _k.trim()) || "",
       dose: Number(formValues.dose) || 0,
       ratio: formValues.ratio.trim(),
-      temp: ((_k = formValues.temp) == null ? void 0 : _k.trim()) || "",
-      grind: ((_l = formValues.grind) == null ? void 0 : _l.trim()) || "",
-      pours: ((_m = formValues.pours) == null ? void 0 : _m.trim()) || "",
-      note: ((_n = formValues.notes) == null ? void 0 : _n.trim()) || "",
+      temp: ((_l = formValues.temp) == null ? void 0 : _l.trim()) || "",
+      grind: ((_m = formValues.grind) == null ? void 0 : _m.trim()) || "",
+      pours: ((_n = formValues.pours) == null ? void 0 : _n.trim()) || "",
+      note: ((_o = formValues.notes) == null ? void 0 : _o.trim()) || "",
       rating: Number(formValues.rating),
       source: formValues.source || "manual"
     };
@@ -222,15 +150,28 @@
   function resolveBrewBeanDetails({ linkedBean, fallbackBean }) {
     const source = linkedBean || fallbackBean || {};
     return {
-      name: source.name || "",
-      roaster: source.roaster || "",
-      farm: source.farm || "",
-      origin: source.origin || "",
-      variety: source.variety || "",
-      process: source.process || "",
-      roastLevel: source.roastLevel || "",
-      roastDate: source.roastDate || ""
+      name: source.name || EMPTY_BREW_BEAN_DETAILS.name,
+      roaster: source.roaster || EMPTY_BREW_BEAN_DETAILS.roaster,
+      farm: source.farm || EMPTY_BREW_BEAN_DETAILS.farm,
+      origin: source.origin || EMPTY_BREW_BEAN_DETAILS.origin,
+      variety: source.variety || EMPTY_BREW_BEAN_DETAILS.variety,
+      process: source.process || EMPTY_BREW_BEAN_DETAILS.process,
+      roastLevel: source.roastLevel || EMPTY_BREW_BEAN_DETAILS.roastLevel,
+      roastDate: source.roastDate || EMPTY_BREW_BEAN_DETAILS.roastDate
     };
+  }
+  function resolveInitialBrewBeanDetails({
+    linkedBean,
+    fallbackBean,
+    useFallbackBean = false
+  }) {
+    if (linkedBean) {
+      return resolveBrewBeanDetails({ linkedBean, fallbackBean: null });
+    }
+    if (useFallbackBean) {
+      return resolveBrewBeanDetails({ linkedBean: null, fallbackBean });
+    }
+    return { ...EMPTY_BREW_BEAN_DETAILS };
   }
   function filterBrews(brews, { beanQuery = "", dripper = "all", minRating = 0 }) {
     const query = beanQuery.trim().toLowerCase();
@@ -249,9 +190,6 @@
   }
 
   // src/photo-analysis.js
-  function titleize(value) {
-    return value.replace(/\b\w/g, (char) => char.toUpperCase());
-  }
   var FLAVOR_TERMS = [
     "jasmine",
     "citrus",
@@ -262,67 +200,404 @@
     "tea",
     "chocolate",
     "cacao",
-    "stone fruit"
+    "stone fruit",
+    "\u8309\u8389\u82B1",
+    "\u8309\u8389",
+    "\u67D1\u6A58",
+    "\u8702\u871C",
+    "\u8393\u679C",
+    "\u82B1\u9999",
+    "\u6843\u5B50",
+    "\u8336\u611F",
+    "\u53EF\u53EF",
+    "\u5DE7\u514B\u529B"
   ];
-  function findLineValue(text, label) {
-    const regex = new RegExp(`${label}\\s*[:\uFF1A]\\s*(.+)`, "i");
-    const match = text.match(regex);
-    return match ? match[1].trim() : "";
+  var VARIETY_TOKENS = [
+    "gesha",
+    "geisha",
+    "sidra",
+    "sl28",
+    "sl34",
+    "bourbon",
+    "typica",
+    "caturra",
+    "catuai",
+    "java",
+    "heirloom",
+    "pink bourbon"
+  ];
+  var ORIGIN_TOKENS = [
+    "colombia",
+    "ethiopia",
+    "kenya",
+    "panama",
+    "guatemala",
+    "\u54E5\u4F26\u6BD4\u4E9A",
+    "\u57C3\u585E\u4FC4\u6BD4\u4E9A",
+    "\u80AF\u5C3C\u4E9A",
+    "\u5DF4\u62FF\u9A6C",
+    "\u5371\u5730\u9A6C\u62C9"
+  ];
+  var PROCESS_PATTERNS = [
+    [/washed|水洗/u, "Washed"],
+    [/natural|日晒/u, "Natural"],
+    [/honey|蜜处理|蜜処理/u, "Honey"],
+    [/anaerobic|厌氧/u, "Anaerobic"],
+    [/co[\s-]?ferment|coferment|共发酵/u, "Co-ferment"]
+  ];
+  var ROAST_LEVEL_PATTERNS = [
+    [/light|浅焙|浅烘/u, "Light"],
+    [/medium|中焙|中烘/u, "Medium"],
+    [/dark|深焙|深烘/u, "Dark"]
+  ];
+  var FIELD_LABELS = {
+    name: ["bean name", "coffee name", "\u8C46\u5B50\u540D\u79F0", "\u8C46\u540D", "\u54C1\u540D"],
+    roaster: ["roaster", "roastery", "roasted by", "\u70D8\u7119\u5546", "\u70D8\u8C46\u5546", "\u70D8\u7119\u5E97"],
+    farm: ["producer", "farm", "estate", "\u5E84\u56ED", "\u5904\u7406\u7AD9", "\u751F\u4EA7\u8005"],
+    origin: ["origin", "region", "\u4EA7\u533A", "\u56FD\u5BB6", "\u6765\u6E90"],
+    variety: ["variety", "cultivar", "\u54C1\u79CD"],
+    process: ["process", "processing", "\u5904\u7406\u65B9\u5F0F", "\u5904\u7406\u6CD5"],
+    roastDate: ["roast date", "roasted on", "\u70D8\u7119\u65E5\u671F", "\u70D8\u7119\u65F6\u95F4"],
+    roastLevel: ["roast level", "\u7119\u5EA6", "\u70D8\u7119\u5EA6"],
+    flavorFocus: [
+      "notes",
+      "tasting notes",
+      "flavor notes",
+      "\u98CE\u5473",
+      "\u98CE\u5473\u63CF\u8FF0",
+      "\u98CE\u5473\u7B14\u8BB0"
+    ]
+  };
+  var GENERIC_PHOTO_LABEL_PATTERNS = [
+    /^image$/i,
+    /^img[_ -]?\d+$/i,
+    /^pxl[_ -]?\d+/i,
+    /^photo$/i,
+    /^scan$/i,
+    /^wx_camera/i
+  ];
+  function compactText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+  function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+  function normalizeLine(line) {
+    return compactText(
+      String(line || "").replace(/[|｜]/g, "I").replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[，]/g, ", ").replace(/[；]/g, "; ").replace(/[、]/g, "\u3001").replace(/\s*[:：]\s*/g, " : ")
+    );
+  }
+  function titleizeAscii(value) {
+    return value.replace(/\b[a-z]/g, (char) => char.toUpperCase());
+  }
+  function normalizeDisplayValue(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    if (/[一-龥]/u.test(nextValue)) {
+      return nextValue;
+    }
+    if (/^[A-Z0-9\s/-]+$/.test(nextValue)) {
+      return nextValue;
+    }
+    return titleizeAscii(nextValue.toLowerCase());
+  }
+  function normalizeDate(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    const normalized = nextValue.replace(/[年/.]/g, "-").replace(/月/g, "-").replace(/日/g, "").replace(/--+/g, "-");
+    const match = normalized.match(/(20\d{2})-(\d{1,2})-(\d{1,2})/);
+    if (!match) {
+      return "";
+    }
+    const [, year, month, day] = match;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+  function countMatches(value, pattern) {
+    return (String(value || "").match(pattern) || []).length;
+  }
+  function extractOriginFragment(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    const regionMatch = nextValue.match(
+      /(Huila,\s*Colombia|Yirgacheffe,\s*Ethiopia|Panama|Colombia|Ethiopia|Kenya|Guatemala|哥伦比亚|埃塞俄比亚|肯尼亚|巴拿马|危地马拉)/i
+    );
+    return normalizeDisplayValue((regionMatch == null ? void 0 : regionMatch[1]) || "");
+  }
+  function isLikelyGarbledValue(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return false;
+    }
+    if (/[一-龥]/u.test(nextValue)) {
+      return false;
+    }
+    const suspiciousSymbolCount = countMatches(nextValue, /[<>{}\[\]\\]/g);
+    if (suspiciousSymbolCount >= 1) {
+      return true;
+    }
+    const weirdPunctuationCount = countMatches(
+      nextValue,
+      /[^A-Za-z0-9\s,./&()\-]/g
+    );
+    if (weirdPunctuationCount >= 4) {
+      return true;
+    }
+    const tokens = nextValue.split(/\s+/).filter(Boolean);
+    const singleCharacterTokenCount = tokens.filter((token) => {
+      const normalized = token.replace(/[^A-Za-z0-9]/g, "");
+      return normalized.length === 1;
+    }).length;
+    if (tokens.length >= 4 && singleCharacterTokenCount >= 3 && singleCharacterTokenCount >= Math.ceil(tokens.length / 2)) {
+      return true;
+    }
+    return false;
+  }
+  function sanitizeRecognizedField(field, value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    if (field === "origin") {
+      const extractedOrigin = extractOriginFragment(nextValue);
+      if (extractedOrigin) {
+        return extractedOrigin;
+      }
+    }
+    if (isLikelyGarbledValue(nextValue)) {
+      return "";
+    }
+    return nextValue;
+  }
+  function normalizeProcess(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    for (const [pattern, normalized] of PROCESS_PATTERNS) {
+      if (pattern.test(nextValue)) {
+        return normalized;
+      }
+    }
+    return normalizeDisplayValue(nextValue);
+  }
+  function normalizeRoastLevel(value) {
+    const nextValue = compactText(value);
+    if (!nextValue) {
+      return "";
+    }
+    for (const [pattern, normalized] of ROAST_LEVEL_PATTERNS) {
+      if (pattern.test(nextValue)) {
+        return normalized;
+      }
+    }
+    if (/[:：\n]/u.test(nextValue)) {
+      return "";
+    }
+    return normalizeDisplayValue(nextValue);
   }
   function inferFlavorFocus(text) {
     const lower = text.toLowerCase();
-    const matchedTerms = FLAVOR_TERMS.filter((term) => lower.includes(term));
-    if (matchedTerms.length > 0) {
-      return matchedTerms.join(", ");
+    const matchedTerms = [];
+    FLAVOR_TERMS.forEach((term) => {
+      const normalizedTerm = term.toLowerCase();
+      if (lower.includes(normalizedTerm) && !matchedTerms.includes(term)) {
+        matchedTerms.push(term);
+      }
+    });
+    return matchedTerms.join(", ");
+  }
+  function buildLabelRegex(labels) {
+    return new RegExp(`^(?:${labels.map(escapeRegExp).join("|")})\\s*[:\uFF1A]\\s*(.+)$`, "i");
+  }
+  function findLineValue(lines, labels) {
+    const regex = buildLabelRegex(labels);
+    for (const line of lines) {
+      const match = line.match(regex);
+      if (match == null ? void 0 : match[1]) {
+        return compactText(match[1]);
+      }
     }
     return "";
+  }
+  function findValueFromAdjacentLine(lines, labels) {
+    const labelSet = new Set(labels.map((label) => label.toLowerCase()));
+    for (let index = 0; index < lines.length - 1; index += 1) {
+      if (labelSet.has(lines[index].toLowerCase())) {
+        return compactText(lines[index + 1]);
+      }
+    }
+    return "";
+  }
+  function findFirstMeaningfulLine(lines, excludePatterns = []) {
+    return lines.find((line) => {
+      if (!line) {
+        return false;
+      }
+      return !excludePatterns.some((pattern) => pattern.test(line));
+    }) || "";
+  }
+  function pickBeanName(lines) {
+    const labeledName = findLineValue(lines, FIELD_LABELS.name) || findValueFromAdjacentLine(lines, FIELD_LABELS.name);
+    if (labeledName) {
+      return normalizeDisplayValue(labeledName);
+    }
+    const varietyLine = lines.find(
+      (line) => VARIETY_TOKENS.some((token) => line.toLowerCase().includes(token))
+    );
+    if (varietyLine) {
+      return normalizeDisplayValue(varietyLine);
+    }
+    return normalizeDisplayValue(
+      findFirstMeaningfulLine(lines.slice(1), [
+        buildLabelRegex(FIELD_LABELS.origin),
+        buildLabelRegex(FIELD_LABELS.process),
+        buildLabelRegex(FIELD_LABELS.variety),
+        buildLabelRegex(FIELD_LABELS.roastDate)
+      ])
+    );
+  }
+  function pickRoaster(lines) {
+    const labeledRoaster = findLineValue(lines, FIELD_LABELS.roaster) || findValueFromAdjacentLine(lines, FIELD_LABELS.roaster);
+    if (labeledRoaster) {
+      return normalizeDisplayValue(labeledRoaster);
+    }
+    return normalizeDisplayValue(lines[0] || "");
+  }
+  function pickOrigin(lines, normalizedText) {
+    const labeledOrigin = findLineValue(lines, FIELD_LABELS.origin) || findValueFromAdjacentLine(lines, FIELD_LABELS.origin);
+    if (labeledOrigin) {
+      return normalizeDisplayValue(labeledOrigin);
+    }
+    const fallbackLine = lines.find(
+      (line) => ORIGIN_TOKENS.some((token) => line.toLowerCase().includes(token.toLowerCase()))
+    );
+    if (fallbackLine) {
+      return normalizeDisplayValue(fallbackLine);
+    }
+    const originMatch = normalizedText.match(
+      /(Huila,\s*Colombia|Yirgacheffe,\s*Ethiopia|Panama|Colombia|Ethiopia|Kenya|Guatemala)/i
+    );
+    return normalizeDisplayValue((originMatch == null ? void 0 : originMatch[1]) || "");
+  }
+  function pickFlavorFocus(lines, normalizedText) {
+    const labeledFlavor = findLineValue(lines, FIELD_LABELS.flavorFocus) || findValueFromAdjacentLine(lines, FIELD_LABELS.flavorFocus);
+    if (labeledFlavor) {
+      return compactText(labeledFlavor);
+    }
+    return inferFlavorFocus(normalizedText);
+  }
+  function normalizeOcrText(text) {
+    const seen = /* @__PURE__ */ new Set();
+    const lines = String(text || "").replace(/\r/g, "").split("\n").map(normalizeLine).filter(Boolean).filter((line) => {
+      const key = line.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+    return lines.join("\n");
   }
   function inferPhotoLabel(file) {
     return file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
   }
-  function extractBeanDetailsFromText(text) {
-    const normalized = text.replace(/\r/g, "").trim();
-    const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
-    const roastDate = findLineValue(normalized, "Roast Date") || findLineValue(normalized, "Roasted On");
-    const process = findLineValue(normalized, "Process") || "Washed";
-    const variety = findLineValue(normalized, "Variety") || "Unknown Variety";
-    const farm = findLineValue(normalized, "Producer") || findLineValue(normalized, "Farm") || "Unknown Farm";
-    const origin = findLineValue(normalized, "Origin") || lines.find((line) => /colombia|ethiopia|kenya|panama|guatemala/i.test(line)) || "Producer Lot / Single Origin";
-    const roaster = lines[0] || "Photo Inferred";
-    const name = lines.find((line) => /gesha|geisha|sidra|bourbon|typica/i.test(line)) || lines[1] || "Single Origin Selection";
-    const flavorFocus = findLineValue(normalized, "Notes") || findLineValue(normalized, "Tasting Notes") || inferFlavorFocus(normalized) || "Floral lift, citrus, clean sweetness";
+  function classifyPhotoAnalysisFailure(message) {
+    const nextMessage = compactText(message);
+    if (!nextMessage) {
+      return "unknown";
+    }
+    if (/OPENAI_API_KEY|未配置|大模型图片识别|无法使用大模型/u.test(nextMessage)) {
+      return "model_unavailable";
+    }
+    return "unknown";
+  }
+  function mergeDetectedBean(base, override) {
+    const nextBase = base || {};
+    const nextOverride = override || {};
     return {
-      name: titleize(name),
-      roaster: titleize(roaster),
-      farm: titleize(farm),
-      origin: titleize(origin),
-      variety: titleize(variety),
-      process: titleize(process),
-      roastLevel: /medium/i.test(normalized) ? "Medium" : "Light",
-      flavorFocus,
-      roastDate: roastDate || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)
+      name: compactText(nextOverride.name) || compactText(nextBase.name),
+      roaster: compactText(nextOverride.roaster) || compactText(nextBase.roaster),
+      farm: compactText(nextOverride.farm) || compactText(nextBase.farm),
+      origin: compactText(nextOverride.origin) || compactText(nextBase.origin),
+      variety: compactText(nextOverride.variety) || compactText(nextBase.variety),
+      process: compactText(nextOverride.process) || compactText(nextBase.process),
+      roastLevel: compactText(nextOverride.roastLevel) || compactText(nextBase.roastLevel),
+      flavorFocus: compactText(nextOverride.flavorFocus) || compactText(nextBase.flavorFocus),
+      roastDate: compactText(nextOverride.roastDate) || compactText(nextBase.roastDate)
+    };
+  }
+  function extractBeanDetailsFromText(text) {
+    const normalized = normalizeOcrText(text);
+    const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+    return {
+      name: sanitizeRecognizedField("name", pickBeanName(lines)),
+      roaster: sanitizeRecognizedField("roaster", pickRoaster(lines)),
+      farm: sanitizeRecognizedField(
+        "farm",
+        normalizeDisplayValue(
+          findLineValue(lines, FIELD_LABELS.farm) || findValueFromAdjacentLine(lines, FIELD_LABELS.farm)
+        )
+      ),
+      origin: sanitizeRecognizedField("origin", pickOrigin(lines, normalized)),
+      variety: sanitizeRecognizedField(
+        "variety",
+        normalizeDisplayValue(
+          findLineValue(lines, FIELD_LABELS.variety) || findValueFromAdjacentLine(lines, FIELD_LABELS.variety)
+        )
+      ),
+      process: sanitizeRecognizedField(
+        "process",
+        normalizeProcess(
+          findLineValue(lines, FIELD_LABELS.process) || findValueFromAdjacentLine(lines, FIELD_LABELS.process)
+        )
+      ),
+      roastLevel: sanitizeRecognizedField(
+        "roastLevel",
+        normalizeRoastLevel(
+          findLineValue(lines, FIELD_LABELS.roastLevel) || findValueFromAdjacentLine(lines, FIELD_LABELS.roastLevel) || normalized
+        )
+      ),
+      flavorFocus: sanitizeRecognizedField(
+        "flavorFocus",
+        pickFlavorFocus(lines, normalized)
+      ),
+      roastDate: sanitizeRecognizedField(
+        "roastDate",
+        normalizeDate(
+          findLineValue(lines, FIELD_LABELS.roastDate) || findValueFromAdjacentLine(lines, FIELD_LABELS.roastDate) || normalized
+        )
+      )
     };
   }
   function inferBeanFromPhoto(file) {
     const label = inferPhotoLabel(file);
     const lower = label.toLowerCase();
-    const process = lower.includes("natural") ? "Natural" : "Washed";
-    const roastLevel = lower.includes("medium") ? "Medium" : "Light";
-    const variety = lower.includes("gesha") ? "Gesha" : "Unknown Variety";
-    const name = lower.includes("gesha") ? `${titleize(label.replace(/\bwashed\b|\bnatural\b|\bmedium\b|\blight\b/g, "").trim()) || "Reserve"} Gesha` : titleize(label) || "Single Origin Selection";
-    const origin = lower.includes("colombia") ? "Huila, Colombia" : lower.includes("ethiopia") ? "Yirgacheffe, Ethiopia" : "Producer Lot / Single Origin";
-    const farm = lower.includes("flores") ? "Las Flores" : "Unknown Farm";
-    const flavorFocus = process === "Natural" ? "Berry sweetness, cacao, round finish" : "Floral lift, citrus, clean sweetness";
+    const process = normalizeProcess(lower.includes("natural") ? "natural" : "washed");
+    const roastLevel = normalizeRoastLevel(lower.includes("medium") ? "medium" : "light");
+    const varietyToken = VARIETY_TOKENS.find((token) => lower.includes(token)) || "";
+    const cleanedLabel = label.replace(/\bwashed\b|\bnatural\b|\bmedium\b|\blight\b/gi, "").trim();
+    const hasGenericLabel = GENERIC_PHOTO_LABEL_PATTERNS.some(
+      (pattern) => pattern.test(cleanedLabel || label)
+    );
+    const name = varietyToken ? normalizeDisplayValue(cleanedLabel || varietyToken) : hasGenericLabel ? "" : normalizeDisplayValue(cleanedLabel || label);
+    const origin = lower.includes("colombia") ? "Huila, Colombia" : lower.includes("ethiopia") ? "Yirgacheffe, Ethiopia" : lower.includes("panama") ? "Panama" : "";
+    const farm = lower.includes("flores") ? "Las Flores" : "";
     return {
       name,
-      roaster: "Photo Inferred",
+      roaster: "",
       farm,
       origin,
-      variety,
+      variety: varietyToken ? normalizeDisplayValue(varietyToken) : "",
       process,
       roastLevel,
-      flavorFocus,
-      roastDate: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)
+      flavorFocus: process === "Natural" ? "Berry sweetness, cacao, round finish" : "Floral lift, citrus, clean sweetness",
+      roastDate: ""
     };
   }
 
@@ -623,28 +898,37 @@
 
   // app.js
   var views = [...document.querySelectorAll("[data-view]")];
-  var navButtons = [...document.querySelectorAll("[data-view-target]")];
+  var viewButtons = [...document.querySelectorAll("[data-view-target]")];
+  var navButtons = [...document.querySelectorAll("[data-nav-tab='true']")];
   var brewForm = document.querySelector("#brew-form");
   var brewDetail = document.querySelector("#brew-detail");
   var saveFeedback = document.querySelector("#save-feedback");
   var equipmentForm = document.querySelector("#equipment-form");
   var equipmentFeedback = document.querySelector("#equipment-feedback");
+  var equipmentListFeedback = document.querySelector("#equipment-list-feedback");
   var equipmentNameInput = document.querySelector("#equipment-name");
   var exportBackupButton = document.querySelector("#export-backup");
   var importBackupInput = document.querySelector("#import-backup");
   var backupFeedback = document.querySelector("#backup-feedback");
   var beanInventoryForm = document.querySelector("#bean-inventory-form");
   var beanInventoryFeedback = document.querySelector("#bean-inventory-feedback");
+  var beanInventoryListFeedback = document.querySelector("#bean-inventory-list-feedback");
   var beanInventoryList = document.querySelector("#bean-inventory-list");
   var saveBeanButton = document.querySelector("#save-bean");
   var inventoryPhotoUpload = document.querySelector("#inventory-photo-upload");
   var inventoryPhotoPreview = document.querySelector("#inventory-photo-preview");
+  var inventoryPhotoPreviewFrame = document.querySelector("#inventory-photo-preview-frame");
+  var inventoryPhotoTitle = document.querySelector("#inventory-photo-title");
+  var inventoryPhotoMeta = document.querySelector("#inventory-photo-meta");
   var photoUpload = document.querySelector("#photo-upload");
   var photoPreview = document.querySelector("#photo-preview");
+  var photoPreviewFrame = document.querySelector("#photo-preview-frame");
   var photoAssistPanel = document.querySelector("#photo-assist-panel");
   var ocrStatus = document.querySelector("#ocr-status");
   var equipmentProfileList = document.querySelector("#equipment-profile-list");
   var brewBeanSelect = document.querySelector("#brew-bean-id");
+  var brewEquipmentProfileSelect = document.querySelector("#brew-equipment-profile");
+  var brewBeanStatusCard = document.querySelector("#brew-bean-status-card");
   var brewBeanStatusTitle = document.querySelector("#brew-bean-status-title");
   var brewBeanStatusMeta = document.querySelector("#brew-bean-status-meta");
   var brewBeanStatusCopy = document.querySelector("#brew-bean-status-copy");
@@ -658,6 +942,15 @@
     roastDate: document.querySelector("#assist-roast-date"),
     flavorFocus: document.querySelector("#assist-flavor-focus")
   };
+  var inventoryAssistFields = {
+    roaster: document.querySelector("#inventory-assist-roaster"),
+    farm: document.querySelector("#inventory-assist-farm"),
+    origin: document.querySelector("#inventory-assist-origin"),
+    variety: document.querySelector("#inventory-assist-variety"),
+    process: document.querySelector("#inventory-assist-process"),
+    roastDate: document.querySelector("#inventory-assist-roast-date"),
+    flavorFocus: document.querySelector("#inventory-assist-flavor-focus")
+  };
   var equipmentFields = [
     "dripper",
     "grinder",
@@ -668,6 +961,13 @@
   if (url.searchParams.get("reset-brews") === "1") {
     localStorage.setItem(BREW_STORAGE_KEY, "[]");
     url.searchParams.delete("reset-brews");
+    window.history.replaceState({}, "", url.toString());
+  }
+  if (url.searchParams.get("reset-all") === "1") {
+    localStorage.setItem(BREW_STORAGE_KEY, "[]");
+    localStorage.removeItem(EQUIPMENT_STORAGE_KEY);
+    localStorage.removeItem(BEAN_INVENTORY_STORAGE_KEY);
+    url.searchParams.delete("reset-all");
     window.history.replaceState({}, "", url.toString());
   }
   var state = {
@@ -686,14 +986,8 @@
       dripper: "all",
       minRating: 0
     },
-    activeBean: analyzedBean,
-    activeSuggestion: buildSuggestion({
-      bean: analyzedBean,
-      equipment: initializeEquipmentState(
-        localStorage.getItem(EQUIPMENT_STORAGE_KEY),
-        equipmentProfile
-      ).profiles[0]
-    }),
+    activeBean: createEmptyBeanDetails(),
+    assistBean: createEmptyBeanDetails(),
     hoveredBrewId: null,
     selectedBrewId: null,
     editingBrewId: null,
@@ -701,7 +995,7 @@
     inventoryPreviewUrl: "",
     inventoryPhotoDataUrl: ""
   };
-  var ocrWorkerPromise;
+  var ocrWorkerCache = /* @__PURE__ */ new Map();
   function reportBootError(error, stage = "unknown") {
     const message = error instanceof Error ? error.message : String(error);
     window.__appBootError = { stage, message };
@@ -712,15 +1006,64 @@
       banner.textContent = `\u9875\u9762\u542F\u52A8\u5931\u8D25\uFF1A${stage} \xB7 ${message}`;
     }
   }
-  function compactText(value) {
+  function compactText2(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
   }
   function displayText(value, fallback = "-") {
-    const nextValue = compactText(value);
+    const nextValue = compactText2(value);
     return nextValue || fallback;
   }
+  function createEmptyBeanDetails() {
+    return {
+      name: "",
+      roaster: "",
+      farm: "",
+      origin: "",
+      variety: "",
+      process: "",
+      roastLevel: "",
+      flavorFocus: "",
+      roastDate: ""
+    };
+  }
+  function readInventoryBeanFormDetails() {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    return {
+      name: ((_a = document.querySelector("#inventory-bean-name")) == null ? void 0 : _a.value) || "",
+      roaster: ((_b = document.querySelector("#inventory-roaster")) == null ? void 0 : _b.value) || "",
+      farm: ((_c = document.querySelector("#inventory-farm")) == null ? void 0 : _c.value) || "",
+      origin: ((_d = document.querySelector("#inventory-origin")) == null ? void 0 : _d.value) || "",
+      variety: ((_e = document.querySelector("#inventory-variety")) == null ? void 0 : _e.value) || "",
+      process: ((_f = document.querySelector("#inventory-process")) == null ? void 0 : _f.value) || "",
+      roastLevel: ((_g = document.querySelector("#inventory-roast-level")) == null ? void 0 : _g.value) || "",
+      roastDate: ((_h = document.querySelector("#inventory-roast-date")) == null ? void 0 : _h.value) || "",
+      flavorFocus: ""
+    };
+  }
+  function renderInventoryPhotoSummary(details = createEmptyBeanDetails()) {
+    inventoryPhotoTitle.textContent = compactText2(details.name) || "\u5F85\u8BC6\u522B";
+    inventoryPhotoMeta.textContent = [
+      compactText2(details.roaster),
+      compactText2(details.origin),
+      compactText2(details.roastDate) ? `\u70D8\u7119 ${compactText2(details.roastDate)}` : ""
+    ].filter(Boolean).join(" \xB7 ");
+    inventoryAssistFields.roaster.textContent = displayText(details.roaster, "\u2014");
+    inventoryAssistFields.farm.textContent = displayText(details.farm, "\u2014");
+    inventoryAssistFields.origin.textContent = displayText(details.origin, "\u2014");
+    inventoryAssistFields.variety.textContent = displayText(details.variety, "\u2014");
+    inventoryAssistFields.process.textContent = displayText(details.process, "\u2014");
+    inventoryAssistFields.roastDate.textContent = displayText(details.roastDate, "\u2014");
+    inventoryAssistFields.flavorFocus.textContent = displayText(
+      details.flavorFocus,
+      "\u2014"
+    );
+  }
+  function setPhotoPreviewVisibility(previewElement, frameElement, hasImage) {
+    previewElement.classList.toggle("has-image", hasImage);
+    frameElement.classList.toggle("is-empty", !hasImage);
+  }
   function truncateText(value, maxLength) {
-    const nextValue = compactText(value);
+    const nextValue = compactText2(value);
     if (!nextValue) {
       return "";
     }
@@ -729,27 +1072,124 @@
     }
     return `${nextValue.slice(0, maxLength - 1).trimEnd()}\u2026`;
   }
+  function setBrewDetailVisibility(isVisible) {
+    var _a;
+    brewDetail.classList.toggle("is-hidden", !isVisible);
+    brewDetail.toggleAttribute("hidden", !isVisible);
+    (_a = document.querySelector(".brews-shell")) == null ? void 0 : _a.classList.toggle("is-single-column", !isVisible);
+  }
   function escapeHtml(value) {
     return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
-  async function getOcrWorker() {
+  async function getOcrWorker(language) {
     var _a;
     if (!((_a = globalThis.Tesseract) == null ? void 0 : _a.createWorker)) {
       return null;
     }
-    if (!ocrWorkerPromise) {
-      ocrWorkerPromise = globalThis.Tesseract.createWorker("eng");
+    if (!ocrWorkerCache.has(language)) {
+      ocrWorkerCache.set(language, globalThis.Tesseract.createWorker(language));
     }
-    return ocrWorkerPromise;
+    return ocrWorkerCache.get(language);
+  }
+  async function loadImageBitmapFromFile(file) {
+    if (globalThis.createImageBitmap) {
+      return await globalThis.createImageBitmap(file);
+    }
+    const dataUrl = await fileToDataUrl(file);
+    const image = await new Promise((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = reject;
+      nextImage.src = dataUrl;
+    });
+    return image;
+  }
+  async function preprocessImageForOcr(file) {
+    const source = await loadImageBitmapFromFile(file);
+    const maxWidth = 1800;
+    const scale = source.width > maxWidth ? maxWidth / source.width : 1;
+    const width = Math.max(1, Math.round(source.width * scale));
+    const height = Math.max(1, Math.round(source.height * scale));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", {
+      willReadFrequently: true
+    });
+    if (!context) {
+      return file;
+    }
+    canvas.width = width;
+    canvas.height = height;
+    context.drawImage(source, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+    let min = 255;
+    let max = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const luminance = Math.round(
+        pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
+      );
+      min = Math.min(min, luminance);
+      max = Math.max(max, luminance);
+      pixels[index] = luminance;
+      pixels[index + 1] = luminance;
+      pixels[index + 2] = luminance;
+    }
+    const spread = Math.max(1, max - min);
+    const threshold = min + spread * 0.62;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const contrasted = (pixels[index] - min) / spread * 255;
+      const nextValue = contrasted > threshold ? 255 : 0;
+      pixels[index] = nextValue;
+      pixels[index + 1] = nextValue;
+      pixels[index + 2] = nextValue;
+    }
+    context.putImageData(imageData, 0, 0);
+    return await new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob || file);
+        },
+        "image/png",
+        1
+      );
+    });
   }
   async function recognizePhotoText(file) {
-    var _a, _b;
-    const worker = await getOcrWorker();
-    if (!worker) {
-      return "";
+    var _a, _b, _c;
+    const [processedImage, englishWorker, chineseWorker] = await Promise.all([
+      preprocessImageForOcr(file),
+      getOcrWorker("eng"),
+      getOcrWorker("chi_sim")
+    ]);
+    const textParts = [];
+    if (englishWorker) {
+      const originalResult = await englishWorker.recognize(file);
+      const processedResult = await englishWorker.recognize(processedImage);
+      textParts.push(((_a = originalResult == null ? void 0 : originalResult.data) == null ? void 0 : _a.text) || "", ((_b = processedResult == null ? void 0 : processedResult.data) == null ? void 0 : _b.text) || "");
     }
-    const result = await worker.recognize(file);
-    return ((_b = (_a = result == null ? void 0 : result.data) == null ? void 0 : _a.text) == null ? void 0 : _b.trim()) || "";
+    if (chineseWorker) {
+      const chineseResult = await chineseWorker.recognize(processedImage);
+      textParts.push(((_c = chineseResult == null ? void 0 : chineseResult.data) == null ? void 0 : _c.text) || "");
+    }
+    return textParts.map((value) => String(value || "").trim()).filter(Boolean).join("\n");
+  }
+  async function analyzePhotoWithModel(file, mode) {
+    const imageDataUrl = await fileToDataUrl(file);
+    const response = await fetch("/api/photo-analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        imageDataUrl,
+        mode
+      })
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "\u6A21\u578B\u8BC6\u522B\u6682\u65F6\u4E0D\u53EF\u7528");
+    }
+    return await response.json();
   }
   function getActiveEquipmentProfile() {
     return state.equipmentState.profiles.find(
@@ -759,7 +1199,13 @@
   function getSelectedEquipmentProfile() {
     return state.equipmentState.profiles.find(
       (profile) => profile.id === state.selectedEquipmentProfileId
-    ) || getActiveEquipmentProfile();
+    ) || null;
+  }
+  function getEquipmentProfileById(profileId) {
+    return state.equipmentState.profiles.find((profile) => profile.id === profileId) || null;
+  }
+  function getBrewEquipmentProfile(profileId = brewEquipmentProfileSelect == null ? void 0 : brewEquipmentProfileSelect.value) {
+    return getEquipmentProfileById(profileId);
   }
   function getActiveInventoryBean() {
     return state.beanInventoryState.beans.find(
@@ -794,7 +1240,7 @@
     };
   }
   function getLinkedBeanForBrewForm(beanId = brewBeanSelect.value) {
-    const targetId = beanId || state.beanInventoryState.activeBeanId;
+    const targetId = beanId || "";
     if (!targetId) {
       return null;
     }
@@ -810,6 +1256,20 @@
     document.querySelector("#brew-roast-level").value = details.roastLevel || "";
     document.querySelector("#brew-roast-date").value = details.roastDate || "";
   }
+  function clearBrewEquipmentForm() {
+    document.querySelector("#brew-dripper").value = "";
+    document.querySelector("#brew-grinder").value = "";
+    document.querySelector("#brew-filters").value = "";
+  }
+  function applyEquipmentProfileToBrewForm(profile) {
+    if (!profile) {
+      clearBrewEquipmentForm();
+      return;
+    }
+    document.querySelector("#brew-dripper").value = profile.dripper || "";
+    document.querySelector("#brew-grinder").value = profile.grinder || "";
+    document.querySelector("#brew-filters").value = profile.filters || "";
+  }
   function renderBrewInlineExperience() {
     var _a;
     const linkedBean = state.beanInventoryState.beans.find(
@@ -817,8 +1277,9 @@
     );
     const currentDose = Number((_a = document.querySelector("#brew-dose")) == null ? void 0 : _a.value) || 0;
     if (linkedBean) {
+      brewBeanStatusCard.hidden = false;
       const status = getBeanInventoryStatus(linkedBean);
-      brewBeanStatusTitle.textContent = linkedBean.name;
+      brewBeanStatusTitle.textContent = `\u5DF2\u5173\u8054 ${linkedBean.name}`;
       brewBeanStatusMeta.textContent = formatBeanInventoryStatusLine({
         restDay: status.restDay,
         readiness: status.readiness,
@@ -831,10 +1292,10 @@
         dose: currentDose
       });
     } else {
-      const unlinkedState = getUnlinkedInventoryStateCopy();
-      brewBeanStatusTitle.textContent = unlinkedState.title;
-      brewBeanStatusMeta.textContent = unlinkedState.meta;
-      brewBeanStatusCopy.textContent = unlinkedState.copy;
+      brewBeanStatusCard.hidden = true;
+      brewBeanStatusTitle.textContent = "";
+      brewBeanStatusMeta.textContent = "";
+      brewBeanStatusCopy.textContent = "";
     }
   }
   function isBrewFormPristine() {
@@ -854,7 +1315,7 @@
       "#brew-temp",
       "#brew-pours",
       "#brew-notes"
-    ].some((selector) => compactText(document.querySelector(selector).value));
+    ].some((selector) => compactText2(document.querySelector(selector).value));
   }
   function setView(nextView) {
     views.forEach((view) => {
@@ -863,17 +1324,24 @@
     navButtons.forEach((button) => {
       button.classList.toggle("is-active", button.dataset.viewTarget === nextView);
     });
-    if (nextView === "inventory") {
-      state.selectedInventoryBeanId = "";
-      renderBeanInventoryProfiles();
-      renderBeanInventoryEditor();
-    }
     if (nextView === "brew" && !state.editingBrewId && isBrewFormPristine()) {
       prefillBrewForm();
     }
+    if (nextView === "inventory") {
+      renderBeanInventoryProfiles();
+    }
+    if (nextView === "bean-editor") {
+      renderBeanInventoryEditor();
+    }
+    if (nextView === "equipment") {
+      renderEquipmentProfiles();
+    }
+    if (nextView === "equipment-editor") {
+      renderEquipmentEditor();
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
-  function renderEquipment() {
-    const activeProfile = getActiveEquipmentProfile();
+  function renderHomeDashboard() {
     document.querySelector("#hero-today-date").textContent = formatHeroDate(
       (/* @__PURE__ */ new Date()).toISOString()
     );
@@ -881,24 +1349,50 @@
     document.querySelector("#hero-bean-count").textContent = String(
       state.beanInventoryState.beans.length
     );
-    document.querySelector("#equipment-profile-name").textContent = activeProfile.name;
-    document.querySelector("#equipment-summary-dripper").textContent = activeProfile.dripper;
-    document.querySelector("#equipment-summary-grinder").textContent = activeProfile.grinder;
-    document.querySelector("#equipment-summary-filters").textContent = activeProfile.filters;
+  }
+  function renderEquipmentEditor() {
     const selectedProfile = getSelectedEquipmentProfile();
-    equipmentNameInput.value = selectedProfile.name;
+    const baseProfile = selectedProfile || getActiveEquipmentProfile();
+    const isEditing = Boolean(selectedProfile);
+    equipmentNameInput.value = (selectedProfile == null ? void 0 : selectedProfile.name) || "";
     equipmentFields.forEach((field) => {
       const select = document.querySelector(`#equipment-${field}`);
       const customInput = document.querySelector(`#equipment-${field}-custom`);
-      const value = selectedProfile[field];
+      const value = (selectedProfile == null ? void 0 : selectedProfile[field]) || baseProfile[field];
       const options = equipmentCatalog[field];
       const isPreset = options.includes(value);
       select.value = isPreset ? value : CUSTOM_OPTION;
       customInput.value = isPreset ? "" : value;
       customInput.classList.toggle("is-hidden", isPreset);
     });
-    document.querySelector("#set-default-profile").disabled = selectedProfile.id === state.equipmentState.activeProfileId;
-    document.querySelector("#delete-profile").disabled = state.equipmentState.profiles.length === 1;
+    document.querySelector("#set-default-profile").disabled = !selectedProfile || selectedProfile.id === state.equipmentState.activeProfileId;
+    document.querySelector("#delete-profile").disabled = !selectedProfile || state.equipmentState.profiles.length === 1;
+    equipmentFeedback.textContent = isEditing ? "\u66F4\u65B0\u8FD9\u5957\u7EC4\u5408\u3002" : "\u4FDD\u5B58\u4E3A\u65B0\u7EC4\u5408\u3002";
+    renderEquipmentEditorPreview();
+  }
+  function renderEquipmentEditorPreview() {
+    const previewName = document.querySelector("#equipment-preview-name");
+    const previewSpecs = document.querySelector("#equipment-preview-specs");
+    const name = compactText2(equipmentNameInput.value) || "\u672A\u547D\u540D\u7EC4\u5408";
+    const profile = {
+      dripper: compactText2(readEquipmentField("dripper")) || "\u5F85\u9009\u6EE4\u676F",
+      grinder: compactText2(readEquipmentField("grinder")) || "\u5F85\u9009\u7814\u78E8\u5668",
+      filters: compactText2(readEquipmentField("filters")) || "\u5F85\u9009\u6EE4\u7EB8"
+    };
+    previewName.textContent = name;
+    previewSpecs.innerHTML = getEquipmentProfileSpecs(profile).map(
+      (spec) => `
+        <div class="equipment-spec-row">
+          <span class="equipment-spec-icon" aria-hidden="true">${renderEquipmentSpecIcon(
+        spec.key
+      )}</span>
+          <span class="equipment-spec-copy">
+            <span class="equipment-spec-label">${escapeHtml(spec.label)}</span>
+            <strong>${escapeHtml(spec.value)}</strong>
+          </span>
+        </div>
+      `
+    ).join("");
   }
   function renderEquipmentProfiles() {
     equipmentProfileList.innerHTML = state.equipmentState.profiles.map((profile) => {
@@ -911,18 +1405,31 @@
           spec.key
         )}</span>
               <span class="equipment-spec-copy">
-                <span class="equipment-spec-label">${spec.label}</span>
-                <strong>${spec.value}</strong>
+                <span class="equipment-spec-label">${escapeHtml(spec.label)}</span>
+                <strong>${escapeHtml(spec.value)}</strong>
               </span>
             </div>
           `
       ).join("");
       return `
-        <button class="equipment-profile-item ${isSelected ? "is-selected" : ""}" data-profile-id="${profile.id}" type="button">
-          <strong>${profile.name}</strong>
+        <article class="equipment-profile-item equipment-profile-card ${isSelected ? "is-selected" : ""}" data-profile-id="${profile.id}">
+          <div class="inventory-bean-title-row">
+            <div class="equipment-profile-copy">
+              <strong>${escapeHtml(profile.name)}</strong>
+              <p class="equipment-profile-meta">${escapeHtml(
+        isDefault ? "\u9ED8\u8BA4\u7EC4\u5408" : "\u5DF2\u4FDD\u5B58\u7EC4\u5408"
+      )}</p>
+            </div>
+            <div class="brew-actions inventory-card-actions">
+              <button class="icon-button inventory-icon-button" type="button" data-action="edit-profile" data-profile-id="${profile.id}" aria-label="\u7F16\u8F91\u8BBE\u5907\u7EC4\u5408">\u270D\uFE0F</button>
+              <button class="icon-button inventory-icon-button" type="button" data-action="delete-profile-inline" data-profile-id="${profile.id}" aria-label="\u5220\u9664\u8BBE\u5907\u7EC4\u5408">\u{1F5D1}\uFE0F</button>
+            </div>
+          </div>
           <div class="equipment-spec-list">${specs}</div>
-          <p class="supporting equipment-profile-status">${isDefault ? "\u9ED8\u8BA4\u7EC4\u5408" : "\u70B9\u6309\u7F16\u8F91"}</p>
-        </button>
+          <div class="inventory-chip-row">
+            ${isDefault ? '<span class="inventory-chip inventory-chip--default">\u9ED8\u8BA4\u7EC4\u5408</span>' : '<span class="inventory-chip">\u53EF\u7F16\u8F91</span>'}
+          </div>
+        </article>
       `;
     }).join("");
   }
@@ -961,7 +1468,7 @@
       ...getBeanInventoryStatus(bean)
     }));
     if (statuses.length === 0) {
-      summaryCopy.textContent = "\u8FD8\u6CA1\u6709\u5F55\u5165\u5E93\u5B58\u8C46\u5B50\uFF0C\u5148\u5728\u8C46\u5B50\u5E93\u5B58\u9875\u5EFA\u4E00\u652F\u5E38\u559D\u7684\u8C46\u3002";
+      summaryCopy.textContent = "";
       summaryStats.innerHTML = "";
       summaryList.innerHTML = "";
       return;
@@ -971,7 +1478,7 @@
       (status) => status.readiness === "resting"
     ).length;
     const lowStockCount = statuses.filter((status) => status.isLowStock).length;
-    summaryCopy.textContent = "\u7528\u517B\u8C46\u5929\u6570\u548C\u5269\u4F59\u514B\u6570\u4E00\u8D77\u5224\u65AD\u73B0\u5728\u8BE5\u51B2\u54EA\u652F\u3001\u54EA\u652F\u8BE5\u8865\u8D27\u3002";
+    summaryCopy.textContent = "";
     summaryStats.innerHTML = `
     <div><span>\u9002\u5408\u51B2</span><strong>${readyCount}</strong></div>
     <div><span>\u517B\u8C46\u4E2D</span><strong>${restingCount}</strong></div>
@@ -1000,7 +1507,6 @@
       <article class="inventory-empty-state">
         <p class="card-kicker">\u8FD8\u6CA1\u6709\u8C46\u5B50</p>
         <h4>\u5148\u5EFA\u7B2C\u4E00\u652F\u8C46\u5B50</h4>
-        <p class="supporting">\u4ECE\u53F3\u4FA7\u62CD\u4E00\u5F20\u8C46\u888B\u7167\uFF0C\u6216\u8005\u5148\u624B\u52A8\u5F55\u5165\u4E00\u652F\u5E38\u559D\u7684\u8C46\u5B50\uFF0C\u5E93\u5B58\u548C\u517B\u8C46\u72B6\u6001\u5C31\u4F1A\u5F00\u59CB\u5DE5\u4F5C\u3002</p>
       </article>
     `;
       return;
@@ -1010,7 +1516,7 @@
       const isSelected = bean.id === state.selectedInventoryBeanId;
       const isDefault = bean.id === state.beanInventoryState.activeBeanId;
       const metaParts = [bean.roaster, bean.process, bean.origin].filter(Boolean);
-      const metaLine = metaParts.length ? metaParts.join(" \xB7 ") : "\u7B49\u5F85\u8865\u5145\u8FD9\u652F\u8C46\u5B50\u7684\u6765\u6E90\u4E0E\u5904\u7406\u4FE1\u606F";
+      const metaLine = metaParts.length ? metaParts.join(" \xB7 ") : "\u5F85\u8865\u5145\u4FE1\u606F";
       return `
         <article class="equipment-profile-item inventory-profile-item ${isSelected ? "is-selected" : ""}" data-bean-id="${bean.id}">
           <div class="inventory-bean-card">
@@ -1042,7 +1548,8 @@
     const selectedBean = getSelectedInventoryBean();
     const restCopy = document.querySelector("#inventory-rest-copy");
     const stockCopy = document.querySelector("#inventory-stock-copy");
-    const photoLabel = document.querySelector("#inventory-photo-label");
+    const inventoryNote = document.querySelector("#inventory-note");
+    const inventoryNoteChips = document.querySelector("#inventory-note-chips");
     const photoCopy = document.querySelector("#inventory-photo-copy");
     const photoStatus = document.querySelector("#inventory-photo-status");
     const editorMode = document.querySelector("#inventory-editor-mode");
@@ -1050,21 +1557,24 @@
     if (!selectedBean) {
       beanInventoryForm.reset();
       editorMode.textContent = "\u65B0\u5EFA\u8C46\u5B50";
-      editorCaption.textContent = "\u5148\u653E\u4E00\u5F20\u8C46\u888B\u7167\u7247\uFF0C\u6216\u8005\u4ECE\u53F3\u4FA7\u76F4\u63A5\u5F55\u5165\u5B57\u6BB5\uFF0C\u6574\u7406\u6210\u4E00\u5F20\u5B8C\u6574\u7684\u8C46\u5B50\u5E93\u5B58\u5361\u3002";
+      editorCaption.textContent = "\u62CD\u7167\u6216\u76F4\u63A5\u5F55\u5165\u3002";
       saveBeanButton.textContent = "\u4FDD\u5B58\u65B0\u8C46\u5B50";
-      restCopy.textContent = "\u5148\u65B0\u5EFA\u4E00\u652F\u8C46\u5B50\uFF0C\u624D\u80FD\u5F00\u59CB\u8FFD\u8E2A\u517B\u8C46\u4E0E\u5E93\u5B58\u3002";
-      stockCopy.textContent = "\u4FDD\u5B58\u540E\uFF0C\u8FD9\u652F\u8C46\u5B50\u5C31\u80FD\u5728\u8BB0\u5F55\u9875\u91CC\u81EA\u52A8\u5E26\u5165\u5E76\u6263\u51CF\u5E93\u5B58\u3002";
-      inventoryPhotoPreview.classList.remove("has-image");
+      inventoryNote.hidden = true;
+      inventoryNoteChips.innerHTML = "";
+      restCopy.textContent = "";
+      stockCopy.textContent = "";
+      setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, false);
       inventoryPhotoPreview.removeAttribute("src");
-      photoLabel.textContent = "\u8C46\u888B\u7167\u7247";
-      photoCopy.textContent = "\u7167\u7247\u4F1A\u4F18\u5148\u7528\u4E8E\u8BC6\u522B\u8C46\u5B50\u57FA\u7840\u4FE1\u606F\uFF0C\u5E76\u4F5C\u4E3A\u5E93\u5B58\u8C46\u5B50\u7684\u5C01\u9762\u3002";
+      inventoryPhotoPreview.alt = "Inventory bean cover preview";
+      renderInventoryPhotoSummary(createEmptyBeanDetails());
+      photoCopy.textContent = "\u62CD\u7167\u540E\u81EA\u52A8\u56DE\u586B\u3002";
       photoStatus.textContent = "";
       document.querySelector("#set-default-bean").disabled = true;
       document.querySelector("#delete-bean").disabled = true;
       return;
     }
     editorMode.textContent = `\u7F16\u8F91\u8C46\u5B50 \xB7 ${selectedBean.name}`;
-    editorCaption.textContent = "\u7EE7\u7EED\u8865\u9F50\u6765\u6E90\u3001\u5904\u7406\u65B9\u5F0F\u3001\u517B\u8C46\u7A97\u53E3\u4E0E\u5269\u4F59\u514B\u6570\uFF0C\u8FD9\u4E9B\u4FE1\u606F\u4F1A\u76F4\u63A5\u5F71\u54CD\u9996\u9875\u548C\u8BB0\u5F55\u9875\u7684\u5224\u65AD\u3002";
+    editorCaption.textContent = "\u7EE7\u7EED\u8865\u9F50\u8FD9\u652F\u8C46\u5B50\u7684\u6863\u6848\u3002";
     saveBeanButton.textContent = "\u66F4\u65B0\u5F53\u524D\u8C46\u5B50";
     document.querySelector("#inventory-bean-name").value = selectedBean.name;
     document.querySelector("#inventory-roaster").value = selectedBean.roaster || "";
@@ -1083,19 +1593,60 @@
     state.inventoryPhotoDataUrl = selectedBean.photoDataUrl || "";
     if (selectedBean.photoDataUrl) {
       inventoryPhotoPreview.src = selectedBean.photoDataUrl;
-      inventoryPhotoPreview.classList.add("has-image");
+      setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, true);
     } else {
-      inventoryPhotoPreview.classList.remove("has-image");
+      setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, false);
       inventoryPhotoPreview.removeAttribute("src");
     }
-    photoLabel.textContent = selectedBean.name || "\u8C46\u888B\u7167\u7247";
-    photoCopy.textContent = "\u8FD9\u5F20\u7167\u7247\u4F1A\u8DDF\u968F\u8C46\u5B50\u5E93\u5B58\u4E00\u8D77\u4FDD\u5B58\uFF0C\u65B9\u4FBF\u56DE\u770B\u548C\u5FEB\u901F\u8FA8\u8BA4\u3002";
+    inventoryPhotoPreview.alt = selectedBean.name ? `${selectedBean.name} cover` : "Inventory bean cover preview";
+    renderInventoryPhotoSummary({
+      name: selectedBean.name,
+      roaster: selectedBean.roaster || "",
+      farm: selectedBean.farm || "",
+      origin: selectedBean.origin || "",
+      variety: selectedBean.variety || "",
+      process: selectedBean.process || "",
+      roastDate: selectedBean.roastDate || "",
+      flavorFocus: ""
+    });
+    photoCopy.textContent = "\u4F1A\u66F4\u65B0\u5C01\u9762\u548C\u8BC6\u522B\u5B57\u6BB5\u3002";
     photoStatus.textContent = "";
     const status = getBeanInventoryStatus(selectedBean);
-    restCopy.textContent = `\u5F53\u524D\u517B\u8C46\u7B2C ${status.restDay} \u5929 \xB7 \u5EFA\u8BAE\u5728\u7B2C ${selectedBean.restStartDay}-${selectedBean.restEndDay} \u5929\u51B2`;
-    stockCopy.textContent = `${selectedBean.currentWeight}g / ${selectedBean.totalWeight}g\uFF0C${status.isLowStock ? "\u5DF2\u7ECF\u63A5\u8FD1\u8865\u8D27\u7EBF" : "\u5E93\u5B58\u8FD8\u6BD4\u8F83\u4ECE\u5BB9"}\u3002`;
+    inventoryNote.hidden = false;
+    inventoryNoteChips.innerHTML = [
+      `<span class="inventory-chip">\u7B2C ${status.restDay} \u5929</span>`,
+      `<span class="inventory-chip inventory-chip--status">${escapeHtml(
+        getInventoryStatusCopy(status.readiness)
+      )}</span>`,
+      `<span class="inventory-chip">${selectedBean.currentWeight}g \u5269\u4F59</span>`,
+      status.isLowStock ? '<span class="inventory-chip inventory-chip--default">\u63A5\u8FD1\u8865\u8D27\u7EBF</span>' : ""
+    ].filter(Boolean).join("");
+    restCopy.textContent = `\u5EFA\u8BAE\u5728\u7B2C ${selectedBean.restStartDay}-${selectedBean.restEndDay} \u5929\u51B2\u3002`;
+    stockCopy.textContent = `${selectedBean.currentWeight}g / ${selectedBean.totalWeight}g\u3002`;
     document.querySelector("#set-default-bean").disabled = selectedBean.id === state.beanInventoryState.activeBeanId;
     document.querySelector("#delete-bean").disabled = false;
+  }
+  function clearInventoryPhotoPreview() {
+    state.inventoryPhotoDataUrl = "";
+    if (state.inventoryPreviewUrl) {
+      URL.revokeObjectURL(state.inventoryPreviewUrl);
+      state.inventoryPreviewUrl = "";
+    }
+  }
+  function openBeanEditor(beanId = "") {
+    state.selectedInventoryBeanId = beanId;
+    if (!beanId) {
+      clearInventoryPhotoPreview();
+    }
+    renderBeanInventoryProfiles();
+    renderBeanInventoryEditor();
+    setView("bean-editor");
+  }
+  function openEquipmentEditor(profileId = "") {
+    state.selectedEquipmentProfileId = profileId;
+    renderEquipmentProfiles();
+    renderEquipmentEditor();
+    setView("equipment-editor");
   }
   async function fileToDataUrl(file) {
     return await new Promise((resolve, reject) => {
@@ -1133,26 +1684,33 @@
     state.inventoryPreviewUrl = URL.createObjectURL(file);
     state.inventoryPhotoDataUrl = await fileToDataUrl(file);
     inventoryPhotoPreview.src = state.inventoryPreviewUrl;
-    inventoryPhotoPreview.classList.add("has-image");
-    document.querySelector("#inventory-photo-label").textContent = inferPhotoLabel(file);
-    document.querySelector("#inventory-photo-status").textContent = "\u6B63\u5728\u8BC6\u522B\u5305\u88C5\u6587\u5B57\u2026";
+    setPhotoPreviewVisibility(inventoryPhotoPreview, inventoryPhotoPreviewFrame, true);
+    inventoryPhotoPreview.alt = inferPhotoLabel(file);
+    document.querySelector("#inventory-photo-status").textContent = "\u6B63\u5728\u8BC6\u522B\u8C46\u888B\u4FE1\u606F\u2026";
     let nextBean = inferBeanFromPhoto(file);
     try {
-      const extractedText = await recognizePhotoText(file);
-      if (extractedText) {
-        nextBean = {
-          ...nextBean,
-          ...extractBeanDetailsFromText(extractedText)
-        };
-        document.querySelector("#inventory-photo-copy").textContent = "\u5DF2\u4ECE\u8C46\u888B\u56FE\u7247\u91CC\u63D0\u53D6\u8C46\u5B50\u4FE1\u606F\uFF0C\u4E0B\u9762\u7684\u5E93\u5B58\u6863\u6848\u5B57\u6BB5\u5DF2\u7ECF\u56DE\u586B\u3002";
-        document.querySelector("#inventory-photo-status").textContent = "OCR \u5DF2\u5B8C\u6210\uFF0C\u8BC6\u522B\u7ED3\u679C\u5DF2\u5E26\u5165\u5E93\u5B58\u8868\u5355\u3002";
-      } else {
-        document.querySelector("#inventory-photo-copy").textContent = "\u6CA1\u6709\u8BFB\u53D6\u5230\u8DB3\u591F\u6E05\u6670\u7684\u5305\u88C5\u6587\u5B57\uFF0C\u5DF2\u56DE\u9000\u5230\u6587\u4EF6\u540D\u548C\u672C\u5730\u89C4\u5219\u63A8\u65AD\u3002";
-        document.querySelector("#inventory-photo-status").textContent = "OCR \u672A\u63D0\u53D6\u5230\u6709\u6548\u6587\u5B57\uFF0C\u5DF2\u56DE\u9000\u5230\u672C\u5730\u63A8\u65AD\u3002";
+      const modelResult = await analyzePhotoWithModel(file, "inventory");
+      nextBean = mergeDetectedBean(nextBean, modelResult.bean);
+      document.querySelector("#inventory-photo-copy").textContent = "\u5DF2\u8BC6\u522B\u5E76\u56DE\u586B\u3002";
+      document.querySelector("#inventory-photo-status").textContent = "\u8BC6\u522B\u5B8C\u6210";
+    } catch (error) {
+      const failureKind = classifyPhotoAnalysisFailure(
+        error instanceof Error ? error.message : String(error)
+      );
+      try {
+        const extractedText = await recognizePhotoText(file);
+        if (extractedText) {
+          nextBean = mergeDetectedBean(nextBean, extractBeanDetailsFromText(extractedText));
+          document.querySelector("#inventory-photo-copy").textContent = "\u5DF2\u8BC6\u522B\u5E76\u56DE\u586B\u3002";
+          document.querySelector("#inventory-photo-status").textContent = failureKind === "model_unavailable" ? "\u5F53\u524D\u4F7F\u7528\u672C\u5730\u8BC6\u522B" : "\u8BC6\u522B\u5B8C\u6210";
+        } else {
+          document.querySelector("#inventory-photo-copy").textContent = "\u672A\u8BC6\u522B\u5230\u53EF\u9760\u5B57\u6BB5\u3002";
+          document.querySelector("#inventory-photo-status").textContent = "\u672A\u63D0\u53D6\u5230\u53EF\u9760\u5B57\u6BB5\u3002";
+        }
+      } catch {
+        document.querySelector("#inventory-photo-copy").textContent = "\u5F53\u524D\u65E0\u6CD5\u81EA\u52A8\u8BC6\u522B\u3002";
+        document.querySelector("#inventory-photo-status").textContent = "\u6682\u65F6\u65E0\u6CD5\u8BC6\u522B\u3002";
       }
-    } catch {
-      document.querySelector("#inventory-photo-copy").textContent = "OCR \u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u5DF2\u56DE\u9000\u5230\u6587\u4EF6\u540D\u548C\u672C\u5730\u89C4\u5219\u63A8\u65AD\u3002";
-      document.querySelector("#inventory-photo-status").textContent = "OCR \u5F53\u524D\u4E0D\u53EF\u7528\uFF0C\u5DF2\u4F7F\u7528\u672C\u5730\u63A8\u65AD\u3002";
     }
     document.querySelector("#inventory-bean-name").value = nextBean.name || "";
     document.querySelector("#inventory-roaster").value = nextBean.roaster || "";
@@ -1162,6 +1720,7 @@
     document.querySelector("#inventory-process").value = nextBean.process || "";
     document.querySelector("#inventory-roast-level").value = nextBean.roastLevel || "";
     document.querySelector("#inventory-roast-date").value = nextBean.roastDate || "";
+    renderInventoryPhotoSummary(nextBean);
   }
   function renderRecentBrews() {
     const container = document.querySelector("#recent-brews");
@@ -1171,14 +1730,14 @@
         <article class="brew-empty-state">
           <p class="card-kicker">\u8FD8\u6CA1\u6709\u8BB0\u5F55</p>
           <h4>\u5148\u8BB0\u4E0B\u4ECA\u5929\u8FD9\u676F</h4>
-          <p class="supporting">\u4ECE\u4E00\u6761\u7B80\u5355\u7684\u51B2\u716E\u8BB0\u5F55\u5F00\u59CB\uFF0C\u6216\u8005\u5148\u6574\u7406\u5E93\u5B58\u8C46\u5B50\uFF0C\u540E\u9762\u7B5B\u9009\u548C\u56DE\u770B\u624D\u4F1A\u6162\u6162\u6709\u610F\u601D\u3002</p>
           <div class="brew-empty-actions">
             <button class="secondary-button" type="button" data-empty-target="brew">\u8BB0\u5F55\u7B2C\u4E00\u676F</button>
             <button class="secondary-button" type="button" data-empty-target="inventory">\u53BB\u5EFA\u5E93\u5B58\u8C46\u5B50</button>
           </div>
         </article>
       `;
-      brewDetail.innerHTML = '<p class="supporting">\u628A\u9F20\u6807\u79FB\u5230\u67D0\u6761\u51B2\u716E\u8BB0\u5F55\u4E0A\uFF0C\u8FD9\u91CC\u4F1A\u663E\u793A\u5B83\u7684\u5B8C\u6574\u4FE1\u606F\u3002</p>';
+      brewDetail.innerHTML = "";
+      setBrewDetailVisibility(false);
       return;
     }
     container.innerHTML = filteredBrews.slice().sort((left, right) => left.createdAt < right.createdAt ? 1 : -1).map(
@@ -1193,15 +1752,19 @@
           <div class="brew-date">${brew.date}</div>
           <div class="brew-main">
             <div class="brew-title-row">
-              <strong title="${escapeHtml(preview.title)}">${escapeHtml(
-          truncateText(preview.title, 56) || "-"
+              <p class="brew-title-line">
+                <strong title="${escapeHtml(preview.title)}">${escapeHtml(
+          truncateText(preview.title, 40) || "-"
         )}</strong>
+                <span class="brew-supplier-inline">${escapeHtml(
+          truncateText(preview.supplier, 32)
+        )}</span>
+              </p>
               <div class="brew-actions">
                 <button class="icon-button" type="button" data-action="edit" data-brew-id="${brew.id}" aria-label="\u7F16\u8F91\u8BB0\u5F55">\u270D\uFE0F</button>
                 <button class="icon-button" type="button" data-action="delete" data-brew-id="${brew.id}" aria-label="\u5220\u9664\u8BB0\u5F55">\u{1F5D1}\uFE0F</button>
               </div>
             </div>
-            <p class="meta-line">${escapeHtml(preview.supplier)}</p>
           </div>
         </article>
       `;
@@ -1210,9 +1773,11 @@
     const activeDetailId = state.hoveredBrewId || state.selectedBrewId;
     const hoveredBrew = filteredBrews.find((brew) => brew.id === activeDetailId);
     if (!hoveredBrew) {
-      brewDetail.innerHTML = '<p class="supporting">\u684C\u9762\u7AEF\u53EF\u60AC\u505C\u67E5\u770B\u8BE6\u60C5\uFF0C\u624B\u673A\u7AEF\u53EF\u70B9\u6309\u67D0\u6761\u8BB0\u5F55\u67E5\u770B\u8BE6\u60C5\u3002</p>';
+      brewDetail.innerHTML = "";
+      setBrewDetailVisibility(false);
       return;
     }
+    setBrewDetailVisibility(true);
     brewDetail.innerHTML = `
     <p class="card-kicker">Brew Detail</p>
     <h3 class="detail-title">${escapeHtml(displayText(hoveredBrew.bean))}</h3>
@@ -1240,43 +1805,38 @@
   `;
   }
   function renderSuggestion() {
-    document.querySelector("#suggestion-bean-name").textContent = state.activeBean.name;
-    document.querySelector(
-      "#suggestion-meta"
-    ).textContent = `${state.activeBean.roaster} \xB7 ${state.activeBean.origin} \xB7 Roast ${state.activeBean.roastDate}`;
-    document.querySelector("#suggestion-ratio").textContent = state.activeSuggestion.ratio;
-    document.querySelector("#suggestion-temp").textContent = state.activeSuggestion.waterTemp;
-    document.querySelector("#suggestion-grind").textContent = state.activeSuggestion.grindGuidance;
-    document.querySelector("#suggestion-process").textContent = state.activeBean.process || "\u5F85\u8BC6\u522B";
-    assistFields.name.value = state.activeBean.name || "";
-    assistFields.roaster.value = state.activeBean.roaster || "";
-    assistFields.farm.value = state.activeBean.farm || "";
-    assistFields.origin.value = state.activeBean.origin || "";
-    assistFields.variety.value = state.activeBean.variety || "";
-    assistFields.process.value = state.activeBean.process || "";
-    assistFields.roastDate.value = state.activeBean.roastDate || "";
-    assistFields.flavorFocus.value = state.activeBean.flavorFocus || "";
+    const assistMeta = [
+      state.assistBean.roaster,
+      state.assistBean.origin,
+      state.assistBean.roastDate ? `Roast ${state.assistBean.roastDate}` : ""
+    ].filter(Boolean).join(" \xB7 ");
+    document.querySelector("#suggestion-bean-name").textContent = state.assistBean.name || "";
+    document.querySelector("#suggestion-meta").textContent = assistMeta;
+    assistFields.name.value = state.assistBean.name || "";
+    assistFields.roaster.value = state.assistBean.roaster || "";
+    assistFields.farm.value = state.assistBean.farm || "";
+    assistFields.origin.value = state.assistBean.origin || "";
+    assistFields.variety.value = state.assistBean.variety || "";
+    assistFields.process.value = state.assistBean.process || "";
+    assistFields.roastDate.value = state.assistBean.roastDate || "";
+    assistFields.flavorFocus.value = state.assistBean.flavorFocus || "";
   }
-  function prefillBrewForm() {
-    brewBeanSelect.value = state.beanInventoryState.activeBeanId || "";
-    const linkedBean = getLinkedBeanForBrewForm();
-    if (linkedBean) {
-      state.activeBean = beanProfileToActiveBean(linkedBean);
-    }
+  function prefillBrewForm({ useFallbackBean = false, useActiveEquipment = false } = {}) {
+    brewBeanSelect.value = "";
+    brewEquipmentProfileSelect.value = useActiveEquipment ? state.equipmentState.activeProfileId || "" : "";
     applyBeanDetailsToBrewForm(
-      resolveBrewBeanDetails({
-        linkedBean,
-        fallbackBean: state.activeBean
+      resolveInitialBrewBeanDetails({
+        linkedBean: null,
+        fallbackBean: state.activeBean,
+        useFallbackBean
       })
     );
-    document.querySelector("#brew-dripper").value = getActiveEquipmentProfile().dripper;
-    document.querySelector("#brew-grinder").value = getActiveEquipmentProfile().grinder;
-    document.querySelector("#brew-filters").value = getActiveEquipmentProfile().filters;
-    document.querySelector("#brew-dose").value = "15";
-    document.querySelector("#brew-grind").value = state.activeSuggestion.grindGuidance;
-    document.querySelector("#brew-ratio").value = state.activeSuggestion.ratio;
-    document.querySelector("#brew-temp").value = state.activeSuggestion.waterTemp;
-    document.querySelector("#brew-pours").value = formatPourPlan(state.activeSuggestion.pours);
+    applyEquipmentProfileToBrewForm(useActiveEquipment ? getBrewEquipmentProfile() : null);
+    document.querySelector("#brew-dose").value = "";
+    document.querySelector("#brew-grind").value = "";
+    document.querySelector("#brew-ratio").value = "";
+    document.querySelector("#brew-temp").value = "";
+    document.querySelector("#brew-pours").value = "";
     document.querySelector("#brew-notes").value = "";
     document.querySelector("#brew-rating").value = "4.5";
     document.querySelector("#brew-rating-output").textContent = "4.5";
@@ -1285,6 +1845,7 @@
   function loadBrewIntoForm(brew) {
     state.editingBrewId = brew.id;
     brewBeanSelect.value = brew.beanId || "";
+    brewEquipmentProfileSelect.value = brew.equipmentProfileId || "";
     document.querySelector("#brew-bean").value = brew.bean || "";
     document.querySelector("#brew-roaster").value = brew.roaster || "";
     document.querySelector("#brew-farm").value = brew.farm || "";
@@ -1334,10 +1895,18 @@
       ].join("");
     });
   }
+  function buildOptionMarkup(options, { placeholder = "", includeEmpty = false } = {}) {
+    const uniqueOptions = [...new Set(options.filter(Boolean))];
+    return [
+      includeEmpty || placeholder !== "" ? `<option value="">${placeholder}</option>` : "",
+      ...uniqueOptions.map((option) => `<option value="${option}">${option}</option>`)
+    ].filter(Boolean).join("");
+  }
   function populateBrewDripperOptions() {
     const brewDripperSelect = document.querySelector("#brew-dripper");
     const filterDripperSelect = document.querySelector("#filter-dripper");
     const currentBrewDripper = brewDripperSelect.value;
+    const isEquipmentLinked = Boolean(brewEquipmentProfileSelect.value);
     const optionSet = /* @__PURE__ */ new Set([
       ...equipmentCatalog.dripper,
       ...legacyDripperOptions,
@@ -1345,13 +1914,38 @@
       ...state.brews.map((brew) => brew.dripper).filter(Boolean)
     ]);
     const dripperOptions = [...optionSet];
-    brewDripperSelect.innerHTML = dripperOptions.map((option) => `<option value="${option}">${option}</option>`).join("");
-    brewDripperSelect.value = currentBrewDripper || getActiveEquipmentProfile().dripper;
+    brewDripperSelect.innerHTML = buildOptionMarkup(dripperOptions, { includeEmpty: true });
+    brewDripperSelect.value = currentBrewDripper || (isEquipmentLinked ? getActiveEquipmentProfile().dripper : "");
     filterDripperSelect.innerHTML = [
       '<option value="all">\u5168\u90E8</option>',
       ...dripperOptions.map((option) => `<option value="${option}">${option}</option>`)
     ].join("");
     filterDripperSelect.value = state.filters.dripper;
+  }
+  function populateBrewEquipmentProfileOptions() {
+    const currentProfileId = brewEquipmentProfileSelect.value;
+    const hasCurrentProfile = state.equipmentState.profiles.some(
+      (profile) => profile.id === currentProfileId
+    );
+    brewEquipmentProfileSelect.innerHTML = [
+      '<option value="">\u4E0D\u5173\u8054\u8BBE\u5907\u5E93</option>',
+      ...state.equipmentState.profiles.map(
+        (profile) => `<option value="${profile.id}">${profile.name}</option>`
+      )
+    ].join("");
+    brewEquipmentProfileSelect.value = currentProfileId === "" ? "" : hasCurrentProfile ? currentProfileId : state.equipmentState.activeProfileId || "";
+  }
+  function populateBrewGrinderOptions() {
+    const brewGrinderSelect = document.querySelector("#brew-grinder");
+    const currentGrinder = brewGrinderSelect.value;
+    const isEquipmentLinked = Boolean(brewEquipmentProfileSelect.value);
+    const grinderOptions = [
+      ...equipmentCatalog.grinder,
+      ...state.equipmentState.profiles.map((profile) => profile.grinder),
+      ...state.brews.map((brew) => brew.grinder).filter(Boolean)
+    ];
+    brewGrinderSelect.innerHTML = buildOptionMarkup(grinderOptions, { includeEmpty: true });
+    brewGrinderSelect.value = currentGrinder || (isEquipmentLinked ? getActiveEquipmentProfile().grinder || "" : "");
   }
   function populateBrewBeanOptions() {
     const currentBeanId = brewBeanSelect.value;
@@ -1362,24 +1956,21 @@
         (bean) => `<option value="${bean.id}">${bean.name}</option>`
       )
     ].join("");
-    brewBeanSelect.value = currentBeanId || state.beanInventoryState.activeBeanId || "";
+    brewBeanSelect.value = currentBeanId || "";
   }
   function readEquipmentField(field) {
     const select = document.querySelector(`#equipment-${field}`);
     const customInput = document.querySelector(`#equipment-${field}-custom`);
     return select.value === CUSTOM_OPTION ? customInput.value : select.value;
   }
-  function refreshSuggestionForCurrentContext() {
-    state.activeSuggestion = buildSuggestion({
-      bean: state.activeBean,
-      equipment: getActiveEquipmentProfile()
-    });
-  }
   function renderAll() {
+    populateBrewEquipmentProfileOptions();
     populateBrewDripperOptions();
+    populateBrewGrinderOptions();
     populateBrewBeanOptions();
-    renderEquipment();
+    renderHomeDashboard();
     renderEquipmentProfiles();
+    renderEquipmentEditor();
     renderInventorySummary();
     renderBeanInventoryProfiles();
     renderBeanInventoryEditor();
@@ -1402,32 +1993,35 @@
     }
     state.previewUrl = URL.createObjectURL(file);
     photoPreview.src = state.previewUrl;
-    photoPreview.classList.add("has-image");
-    document.querySelector("#photo-label").textContent = inferPhotoLabel(file);
-    ocrStatus.textContent = "\u6B63\u5728\u8BC6\u522B\u5305\u88C5\u6587\u5B57\u2026";
+    setPhotoPreviewVisibility(photoPreview, photoPreviewFrame, true);
+    photoPreview.alt = inferPhotoLabel(file);
+    ocrStatus.textContent = "\u6B63\u5728\u8C03\u7528\u89C6\u89C9\u6A21\u578B\u8BC6\u522B\u8C46\u888B\u4FE1\u606F\u2026";
     let nextBean = inferBeanFromPhoto(file);
     try {
-      const extractedText = await recognizePhotoText(file);
-      if (extractedText) {
-        nextBean = {
-          ...nextBean,
-          ...extractBeanDetailsFromText(extractedText)
-        };
-        document.querySelector("#photo-notes-copy").textContent = "\u5DF2\u4ECE\u56FE\u7247\u5305\u88C5\u6587\u5B57\u4E2D\u63D0\u53D6\u8C46\u5B50\u4FE1\u606F\uFF0C\u5E76\u751F\u6210\u5F53\u524D\u8BBE\u5907\u7EC4\u5408\u4E0B\u7684\u8D77\u59CB\u5EFA\u8BAE\u3002";
-        ocrStatus.textContent = "OCR \u5DF2\u5B8C\u6210\uFF0C\u8BC6\u522B\u7ED3\u679C\u5DF2\u5E26\u5165\u6458\u8981\u3002";
-      } else {
-        document.querySelector("#photo-notes-copy").textContent = "\u6CA1\u6709\u8BFB\u53D6\u5230\u8DB3\u591F\u6E05\u6670\u7684\u5305\u88C5\u6587\u5B57\uFF0C\u5DF2\u56DE\u9000\u5230\u6587\u4EF6\u540D\u548C\u672C\u5730\u89C4\u5219\u63A8\u65AD\u3002";
-        ocrStatus.textContent = "OCR \u672A\u63D0\u53D6\u5230\u6709\u6548\u6587\u5B57\uFF0C\u5DF2\u56DE\u9000\u5230\u672C\u5730\u63A8\u65AD\u3002";
+      const modelResult = await analyzePhotoWithModel(file, "brew");
+      nextBean = mergeDetectedBean(nextBean, modelResult.bean);
+      document.querySelector("#photo-notes-copy").textContent = "\u5DF2\u5B8C\u6210\u6A21\u578B\u8BC6\u522B\u3002";
+      ocrStatus.textContent = `\u6A21\u578B\u8BC6\u522B\u5DF2\u5B8C\u6210${modelResult.model ? ` \xB7 ${modelResult.model}` : ""}`;
+    } catch (error) {
+      const failureKind = classifyPhotoAnalysisFailure(
+        error instanceof Error ? error.message : String(error)
+      );
+      try {
+        const extractedText = await recognizePhotoText(file);
+        if (extractedText) {
+          nextBean = mergeDetectedBean(nextBean, extractBeanDetailsFromText(extractedText));
+          document.querySelector("#photo-notes-copy").textContent = "\u5F53\u524D\u4F7F\u7528\u672C\u5730\u8BC6\u522B\u3002";
+          ocrStatus.textContent = failureKind === "model_unavailable" ? "\u672A\u542F\u7528\u5927\u6A21\u578B \xB7 \u672C\u5730 OCR" : "\u672C\u5730 OCR \u5DF2\u5B8C\u6210";
+        } else {
+          document.querySelector("#photo-notes-copy").textContent = "\u672A\u8BC6\u522B\u5230\u53EF\u9760\u5B57\u6BB5\u3002";
+          ocrStatus.textContent = "\u672A\u63D0\u53D6\u5230\u53EF\u9760\u5B57\u6BB5\u3002";
+        }
+      } catch {
+        document.querySelector("#photo-notes-copy").textContent = "\u5F53\u524D\u65E0\u6CD5\u81EA\u52A8\u8BC6\u522B\u3002";
+        ocrStatus.textContent = "\u6A21\u578B\u548C OCR \u5F53\u524D\u90FD\u4E0D\u53EF\u7528\u3002";
       }
-    } catch {
-      document.querySelector("#photo-notes-copy").textContent = "OCR \u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u5DF2\u56DE\u9000\u5230\u6587\u4EF6\u540D\u548C\u672C\u5730\u89C4\u5219\u63A8\u65AD\u3002";
-      ocrStatus.textContent = "OCR \u5F53\u524D\u4E0D\u53EF\u7528\uFF0C\u5DF2\u4F7F\u7528\u672C\u5730\u63A8\u65AD\u3002";
     }
-    state.activeBean = nextBean;
-    state.activeSuggestion = buildSuggestion({
-      bean: state.activeBean,
-      equipment: getActiveEquipmentProfile()
-    });
+    state.assistBean = nextBean;
     renderAll();
   }
   function bindRatingOutput() {
@@ -1440,7 +2034,7 @@
     sync();
   }
   try {
-    navButtons.forEach((button) => {
+    viewButtons.forEach((button) => {
       button.addEventListener("click", () => setView(button.dataset.viewTarget));
     });
     document.querySelectorAll("#filter-bean, #filter-dripper, #filter-rating").forEach((input) => {
@@ -1459,6 +2053,7 @@
       const brew = buildBrewEntry({
         bean: formData.get("bean"),
         beanId: formData.get("beanId"),
+        equipmentProfileId: formData.get("equipmentProfileId"),
         roaster: formData.get("roaster"),
         farm: formData.get("farm"),
         origin: formData.get("origin"),
@@ -1476,7 +2071,7 @@
         pours: formData.get("pours"),
         notes: formData.get("notes"),
         rating: formData.get("rating"),
-        source: document.querySelector("#brew-bean").value === state.activeBean.name ? "suggestion" : "manual"
+        source: formData.get("beanId") ? "inventory" : "manual"
       });
       const finalBrew = state.editingBrewId ? { ...brew, id: state.editingBrewId } : brew;
       const previousBrew = state.editingBrewId ? state.brews.find((entry) => entry.id === state.editingBrewId) || null : null;
@@ -1498,51 +2093,42 @@
     equipmentForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const selectedProfile = getSelectedEquipmentProfile();
-      state.equipmentState = updateEquipmentProfile(
-        state.equipmentState,
-        buildEquipmentProfile({
-          id: selectedProfile.id,
-          name: equipmentNameInput.value,
-          dripper: readEquipmentField("dripper"),
-          grinder: readEquipmentField("grinder"),
-          filters: readEquipmentField("filters")
-        })
-      );
+      const nextProfile = buildEquipmentProfile({
+        id: (selectedProfile == null ? void 0 : selectedProfile.id) || `profile-${Date.now()}`,
+        name: equipmentNameInput.value,
+        dripper: readEquipmentField("dripper"),
+        grinder: readEquipmentField("grinder"),
+        filters: readEquipmentField("filters")
+      });
+      state.equipmentState = selectedProfile ? updateEquipmentProfile(state.equipmentState, nextProfile) : {
+        ...state.equipmentState,
+        profiles: [...state.equipmentState.profiles, nextProfile]
+      };
+      state.selectedEquipmentProfileId = nextProfile.id;
       persistEquipment();
-      refreshSuggestionForCurrentContext();
       renderAll();
-      equipmentFeedback.textContent = "\u8BBE\u5907\u6863\u6848\u5DF2\u66F4\u65B0\uFF0C\u5E76\u5DF2\u540C\u6B65\u5230\u5EFA\u8BAE\u548C\u9ED8\u8BA4\u503C\u3002";
+      equipmentListFeedback.textContent = selectedProfile ? "\u8BBE\u5907\u7EC4\u5408\u5DF2\u66F4\u65B0\u3002" : "\u65B0\u8BBE\u5907\u7EC4\u5408\u5DF2\u52A0\u5165\u5217\u8868\u3002";
+      setView("equipment");
     });
     document.querySelector("#set-default-profile").addEventListener("click", () => {
+      if (!state.selectedEquipmentProfileId) {
+        equipmentFeedback.textContent = "\u5148\u4FDD\u5B58\u8FD9\u5957\u7EC4\u5408\uFF0C\u518D\u8BBE\u4E3A\u9ED8\u8BA4\u3002";
+        return;
+      }
       state.equipmentState = setActiveEquipmentProfile(
         state.equipmentState,
         state.selectedEquipmentProfileId
       );
       persistEquipment();
-      refreshSuggestionForCurrentContext();
       renderAll();
       equipmentFeedback.textContent = "\u5F53\u524D\u7EC4\u5408\u5DF2\u8BBE\u4E3A\u9ED8\u8BA4\u8BBE\u5907\u6863\u6848\u3002";
-    });
-    document.querySelector("#new-profile").addEventListener("click", () => {
-      const nextId = `profile-${Date.now()}`;
-      const baseProfile = getActiveEquipmentProfile();
-      const nextProfile = buildEquipmentProfile({
-        id: nextId,
-        name: "\u65B0\u8BBE\u5907\u7EC4\u5408",
-        dripper: baseProfile.dripper,
-        grinder: baseProfile.grinder,
-        filters: baseProfile.filters
-      });
-      state.equipmentState = {
-        ...state.equipmentState,
-        profiles: [...state.equipmentState.profiles, nextProfile]
-      };
-      state.selectedEquipmentProfileId = nextId;
-      persistEquipment();
-      renderAll();
-      equipmentFeedback.textContent = "\u5DF2\u65B0\u5EFA\u8BBE\u5907\u7EC4\u5408\u3002";
+      equipmentListFeedback.textContent = "\u9ED8\u8BA4\u8BBE\u5907\u7EC4\u5408\u5DF2\u66F4\u65B0\u3002";
     });
     document.querySelector("#delete-profile").addEventListener("click", () => {
+      if (!state.selectedEquipmentProfileId) {
+        equipmentFeedback.textContent = "\u5148\u6253\u5F00\u4E00\u5957\u5DF2\u4FDD\u5B58\u7684\u7EC4\u5408\uFF0C\u518D\u5220\u9664\u3002";
+        return;
+      }
       if (state.equipmentState.profiles.length === 1) {
         equipmentFeedback.textContent = "\u81F3\u5C11\u9700\u8981\u4FDD\u7559\u4E00\u5957\u8BBE\u5907\u7EC4\u5408\u3002";
         return;
@@ -1553,9 +2139,9 @@
       );
       state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
       persistEquipment();
-      refreshSuggestionForCurrentContext();
       renderAll();
-      equipmentFeedback.textContent = "\u5F53\u524D\u8BBE\u5907\u7EC4\u5408\u5DF2\u5220\u9664\u3002";
+      equipmentListFeedback.textContent = "\u5F53\u524D\u8BBE\u5907\u7EC4\u5408\u5DF2\u5220\u9664\u3002";
+      setView("equipment");
     });
     equipmentFields.forEach((field) => {
       const select = document.querySelector(`#equipment-${field}`);
@@ -1567,6 +2153,10 @@
           customInput.focus();
         }
       });
+    });
+    document.querySelector("#new-equipment-profile").addEventListener("click", () => {
+      openEquipmentEditor("");
+      equipmentFeedback.textContent = "\u6B63\u5728\u65B0\u5EFA\u8BBE\u5907\u7EC4\u5408\u3002";
     });
     exportBackupButton.addEventListener("click", () => {
       downloadBackup();
@@ -1589,7 +2179,6 @@
         if (activeBean) {
           state.activeBean = beanProfileToActiveBean(activeBean);
         }
-        refreshSuggestionForCurrentContext();
         persistBrews();
         persistEquipment();
         persistBeanInventory();
@@ -1612,17 +2201,41 @@
       photoAssistPanel.classList.toggle("is-open");
     });
     equipmentProfileList.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-profile-id]");
-      if (!button) {
+      const actionButton = event.target.closest("[data-action]");
+      const card = event.target.closest("[data-profile-id]");
+      if (!actionButton && !card) {
         return;
       }
-      state.selectedEquipmentProfileId = button.dataset.profileId;
-      renderEquipment();
-      renderEquipmentProfiles();
+      const profileId = (actionButton == null ? void 0 : actionButton.dataset.profileId) || (card == null ? void 0 : card.dataset.profileId);
+      if (!profileId) {
+        return;
+      }
+      if ((actionButton == null ? void 0 : actionButton.dataset.action) === "delete-profile-inline") {
+        if (state.equipmentState.profiles.length === 1) {
+          equipmentListFeedback.textContent = "\u81F3\u5C11\u9700\u8981\u4FDD\u7559\u4E00\u5957\u8BBE\u5907\u7EC4\u5408\u3002";
+          return;
+        }
+        state.equipmentState = removeEquipmentProfile(state.equipmentState, profileId);
+        if (state.selectedEquipmentProfileId === profileId) {
+          state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
+        }
+        persistEquipment();
+        renderAll();
+        equipmentListFeedback.textContent = "\u5F53\u524D\u8BBE\u5907\u7EC4\u5408\u5DF2\u5220\u9664\u3002";
+        return;
+      }
+      openEquipmentEditor(profileId);
+      equipmentFeedback.textContent = "\u6B63\u5728\u7F16\u8F91\u8FD9\u5957\u8BBE\u5907\u7EC4\u5408\u3002";
     });
     beanInventoryList.addEventListener("click", (event) => {
       const actionButton = event.target.closest("[data-action]");
+      const card = event.target.closest("[data-bean-id]");
       if (!actionButton) {
+        if (!(card == null ? void 0 : card.dataset.beanId)) {
+          return;
+        }
+        openBeanEditor(card.dataset.beanId);
+        beanInventoryFeedback.textContent = "\u6B63\u5728\u7F16\u8F91\u8FD9\u652F\u5E93\u5B58\u8C46\u5B50\u3002";
         return;
       }
       const beanId = actionButton.dataset.beanId;
@@ -1630,9 +2243,7 @@
         return;
       }
       if (actionButton.dataset.action === "edit-bean") {
-        state.selectedInventoryBeanId = beanId;
-        renderBeanInventoryProfiles();
-        renderBeanInventoryEditor();
+        openBeanEditor(beanId);
         beanInventoryFeedback.textContent = "\u6B63\u5728\u7F16\u8F91\u8FD9\u652F\u5E93\u5B58\u8C46\u5B50\u3002";
         return;
       }
@@ -1644,10 +2255,10 @@
         if (state.selectedInventoryBeanId === beanId) {
           state.selectedInventoryBeanId = "";
         }
-        state.inventoryPhotoDataUrl = "";
+        clearInventoryPhotoPreview();
         persistBeanInventory();
         renderAll();
-        beanInventoryFeedback.textContent = "\u5F53\u524D\u8C46\u5B50\u5DF2\u4ECE\u5E93\u5B58\u91CC\u79FB\u9664\u3002";
+        beanInventoryListFeedback.textContent = "\u5F53\u524D\u8C46\u5B50\u5DF2\u4ECE\u5E93\u5B58\u91CC\u79FB\u9664\u3002";
       }
     });
     beanInventoryForm.addEventListener("submit", (event) => {
@@ -1682,17 +2293,11 @@
       }
       persistBeanInventory();
       renderAll();
-      beanInventoryFeedback.textContent = isEditing ? "\u5F53\u524D\u8C46\u5B50\u5DF2\u66F4\u65B0\u3002" : "\u65B0\u8C46\u5B50\u5DF2\u52A0\u5165\u5E93\u5B58\u3002";
+      beanInventoryListFeedback.textContent = isEditing ? "\u5F53\u524D\u8C46\u5B50\u5DF2\u66F4\u65B0\u3002" : "\u65B0\u8C46\u5B50\u5DF2\u52A0\u5165\u5E93\u5B58\u3002";
+      setView("inventory");
     });
-    document.querySelector("#new-bean").addEventListener("click", () => {
-      state.selectedInventoryBeanId = "";
-      state.inventoryPhotoDataUrl = "";
-      if (state.inventoryPreviewUrl) {
-        URL.revokeObjectURL(state.inventoryPreviewUrl);
-        state.inventoryPreviewUrl = "";
-      }
-      renderBeanInventoryProfiles();
-      renderBeanInventoryEditor();
+    document.querySelector("#new-bean-listing").addEventListener("click", () => {
+      openBeanEditor("");
       beanInventoryFeedback.textContent = "\u6B63\u5728\u65B0\u5EFA\u4E00\u652F\u5E93\u5B58\u8C46\u5B50\u3002";
     });
     document.querySelector("#save-bean-as-new").addEventListener("click", () => {
@@ -1713,6 +2318,7 @@
       persistBeanInventory();
       renderAll();
       beanInventoryFeedback.textContent = "\u5F53\u524D\u8C46\u5B50\u5DF2\u8BBE\u4E3A\u9ED8\u8BA4\u3002";
+      beanInventoryListFeedback.textContent = "\u9ED8\u8BA4\u8C46\u5B50\u5DF2\u66F4\u65B0\u3002";
     });
     document.querySelector("#delete-bean").addEventListener("click", () => {
       if (!state.selectedInventoryBeanId) {
@@ -1724,23 +2330,36 @@
         state.selectedInventoryBeanId
       );
       state.selectedInventoryBeanId = "";
-      state.inventoryPhotoDataUrl = "";
+      clearInventoryPhotoPreview();
       persistBeanInventory();
       renderAll();
-      beanInventoryFeedback.textContent = "\u5F53\u524D\u8C46\u5B50\u5DF2\u4ECE\u5E93\u5B58\u91CC\u79FB\u9664\u3002";
+      beanInventoryListFeedback.textContent = "\u5F53\u524D\u8C46\u5B50\u5DF2\u4ECE\u5E93\u5B58\u91CC\u79FB\u9664\u3002";
+      setView("inventory");
     });
     inventoryPhotoUpload.addEventListener("change", async (event) => {
       const [file] = event.target.files || [];
       await handleInventoryPhotoUpload(file);
     });
+    beanInventoryForm.addEventListener("input", (event) => {
+      if (event.target === inventoryPhotoUpload) {
+        return;
+      }
+      renderInventoryPhotoSummary(readInventoryBeanFormDetails());
+    });
     brewBeanSelect.addEventListener("change", () => {
       const bean = getLinkedBeanForBrewForm(brewBeanSelect.value);
       if (!bean) {
+        applyBeanDetailsToBrewForm(
+          resolveInitialBrewBeanDetails({
+            linkedBean: null,
+            fallbackBean: null,
+            useFallbackBean: false
+          })
+        );
         renderBrewInlineExperience();
         return;
       }
       state.activeBean = beanProfileToActiveBean(bean);
-      refreshSuggestionForCurrentContext();
       applyBeanDetailsToBrewForm(
         resolveBrewBeanDetails({
           linkedBean: bean,
@@ -1749,6 +2368,10 @@
       );
       renderSuggestion();
       renderBrewInlineExperience();
+    });
+    brewEquipmentProfileSelect.addEventListener("change", () => {
+      const profile = getBrewEquipmentProfile(brewEquipmentProfileSelect.value);
+      applyEquipmentProfileToBrewForm(profile);
     });
     document.querySelector("#recent-brews").addEventListener("pointermove", (event) => {
       if (!window.matchMedia("(hover: hover)").matches) {
@@ -1809,8 +2432,8 @@
       }
     });
     document.querySelector("#apply-suggestion").addEventListener("click", () => {
-      state.activeBean = {
-        ...state.activeBean,
+      state.assistBean = {
+        ...state.assistBean,
         name: assistFields.name.value.trim(),
         roaster: assistFields.roaster.value.trim(),
         farm: assistFields.farm.value.trim(),
@@ -1820,17 +2443,29 @@
         roastDate: assistFields.roastDate.value.trim(),
         flavorFocus: assistFields.flavorFocus.value.trim()
       };
-      refreshSuggestionForCurrentContext();
+      state.activeBean = {
+        ...state.assistBean
+      };
       renderSuggestion();
-      prefillBrewForm();
-      saveFeedback.textContent = "\u8BC6\u522B\u7ED3\u679C\u548C\u5EFA\u8BAE\u53C2\u6570\u5DF2\u7ECF\u5E26\u5165\u8BB0\u5F55\u9875\uFF0C\u53EF\u4EE5\u7EE7\u7EED\u8C03\u6574\u540E\u4FDD\u5B58\u3002";
+      brewBeanSelect.value = "";
+      applyBeanDetailsToBrewForm(state.activeBean);
+      renderBrewInlineExperience();
+      saveFeedback.textContent = "\u8BC6\u522B\u5B57\u6BB5\u5DF2\u5E26\u5165\u5F53\u524D\u8BB0\u5F55\u3002";
       setView("brew");
     });
     populateEquipmentSelects();
     state.selectedEquipmentProfileId = state.equipmentState.activeProfileId;
     state.selectedInventoryBeanId = "";
-    refreshSuggestionForCurrentContext();
     renderAll();
+    if ("serviceWorker" in navigator) {
+      window.addEventListener(
+        "load",
+        () => {
+          navigator.serviceWorker.register("./service-worker.js?v=20260327-1").catch((error) => console.warn("[service worker]", error));
+        },
+        { once: true }
+      );
+    }
     bindRatingOutput();
     setView("home");
     window.__appBootError = null;

@@ -6,6 +6,7 @@ import {
   filterBrews,
   initializeBrews,
   removeBrewEntry,
+  resolveInitialBrewBeanDetails,
   resolveBrewBeanDetails,
   updateBrewEntry,
 } from "../src/brew-store.js";
@@ -173,4 +174,52 @@ test("resolveBrewBeanDetails falls back to the active bean when no inventory bea
     roastLevel: "Light",
     roastDate: "2026-03-18",
   });
+});
+
+test("resolveInitialBrewBeanDetails keeps bean fields empty until the user explicitly applies a suggestion", () => {
+  const details = resolveInitialBrewBeanDetails({
+    linkedBean: null,
+    fallbackBean: {
+      name: "Las Flores Gesha",
+      roaster: "Northbound Coffee",
+      farm: "Las Flores",
+      origin: "Huila, Colombia",
+      variety: "Gesha",
+      process: "Washed",
+      roastLevel: "Light",
+      roastDate: "2026-03-18",
+    },
+    useFallbackBean: false,
+  });
+
+  assert.deepEqual(details, {
+    name: "",
+    roaster: "",
+    farm: "",
+    origin: "",
+    variety: "",
+    process: "",
+    roastLevel: "",
+    roastDate: "",
+  });
+});
+
+test("resolveInitialBrewBeanDetails can still opt into suggestion bean details when requested", () => {
+  const details = resolveInitialBrewBeanDetails({
+    linkedBean: null,
+    fallbackBean: {
+      name: "Las Flores Gesha",
+      roaster: "Northbound Coffee",
+      farm: "Las Flores",
+      origin: "Huila, Colombia",
+      variety: "Gesha",
+      process: "Washed",
+      roastLevel: "Light",
+      roastDate: "2026-03-18",
+    },
+    useFallbackBean: true,
+  });
+
+  assert.equal(details.name, "Las Flores Gesha");
+  assert.equal(details.roaster, "Northbound Coffee");
 });

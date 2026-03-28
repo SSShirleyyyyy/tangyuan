@@ -211,7 +211,7 @@ test("formatInventoryDeductionPreview tells the user how stock will change after
       currentWeight: 0,
       dose: 15,
     }),
-    "关联库存豆子后，保存这杯时会按粉量自动扣减库存。"
+    "未关联库存，不会扣减。"
   );
 });
 
@@ -237,10 +237,10 @@ test("formatSuggestionSummary keeps the inline brew recommendation concise", () 
 
 test("getUnlinkedInventoryStateCopy keeps the unlinked bean status calm and readable", () => {
   assert.deepEqual(getUnlinkedInventoryStateCopy(), {
-    title: "还没关联库存豆子",
-    meta: "想让这杯自动扣减库存的话，先从上面选一支豆子。",
-    copy: "不关联也可以照常记录，只是这杯不会进入库存与养豆提醒。",
-    optionLabel: "先不关联库存",
+    title: "暂不关联库存豆子",
+    meta: "这杯不会扣减库存。",
+    copy: "可直接保存记录。",
+    optionLabel: "不关联库存豆子",
   });
 });
 

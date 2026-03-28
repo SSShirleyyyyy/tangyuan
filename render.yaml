@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pourover-journal
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install && npm run build:bundle
+    startCommand: HOST=0.0.0.0 npm run serve:local
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: OPENAI_VISION_MODEL
+        value: gpt-5
+      - key: OPENAI_API_KEY
+        sync: false

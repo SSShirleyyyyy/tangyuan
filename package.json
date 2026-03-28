@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --test",
     "serve:local": "node scripts/local-server.mjs",
     "build:bundle": "esbuild app.js --bundle --format=iife --target=es2019 --outfile=app.bundle.js",
-    "build:pages": "npm run build:bundle && rm -rf dist && mkdir -p dist && cp index.html app.bundle.js styles.css dist/ && cp -R src assets dist/ && touch dist/.nojekyll"
+    "build:pages": "npm run build:bundle && rm -rf dist && mkdir -p dist && cp index.html app.bundle.js styles.css manifest.webmanifest service-worker.js dist/ && cp -R src assets dist/ && touch dist/.nojekyll"
   },
   "devDependencies": {
     "esbuild": "^0.27.4"

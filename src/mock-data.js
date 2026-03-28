@@ -1,5 +1,3 @@
-import { buildSuggestion } from "./recommendation.js";
-
 export const equipmentProfile = {
   dripper: "HARIO V60 02",
   grinder: "Comandante C40",
@@ -60,7 +58,7 @@ export const seedBrews = [
     pours: "Bloom 45g 0:00-0:35",
     rating: 4.8,
     note: "Jasmine lift, clean finish.",
-    source: "suggestion",
+    source: "manual",
   },
   {
     id: "seed-3",
@@ -84,8 +82,3 @@ export const seedBrews = [
     source: "manual",
   },
 ];
-
-export const suggestion = buildSuggestion({
-  bean: analyzedBean,
-  equipment: equipmentProfile,
-});
